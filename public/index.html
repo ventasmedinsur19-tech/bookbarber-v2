@@ -9,7 +9,7 @@
     :root { --primary: #2563eb; --dark: #0f172a; --bg: #f8fafc; --text-muted: #64748b; }
     body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); }
     
-    /* NAVEGACIÓN Y MENÚ LATERAL */
+    /* NAVBAR Y SIDEBAR (MENÚ) */
     .navbar { background: var(--dark); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
     .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: white; z-index: 1000; transition: 0.3s; box-shadow: 5px 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
     .sidebar.active { left: 0; }
@@ -18,17 +18,20 @@
     .nav-item { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; color: var(--dark); text-decoration: none; font-weight: 500; cursor: pointer; }
     .nav-item i { margin-right: 15px; width: 20px; text-align: center; color: var(--primary); font-size: 18px; }
     
-    /* CONTENEDORES */
+    /* CONTENEDORES Y CARDS */
     .container { padding: 20px; max-width: 500px; margin: auto; }
     .plan-card { background: white; border-radius: 15px; padding: 20px; border-left: 5px solid #ef4444; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .btn-black { background: var(--dark); color: white; border: none; width: 100%; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
     
-    /* ESTILOS SUCURSALES */
+    /* ESTILOS DE SUCURSALES */
     .card-suc { background:white; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #eee; display: flex; align-items: center; gap: 15px; }
     .img-preview { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; }
-    .btn-plus { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.3); display: flex; align-items: center; justify-content: center; margin: 10px auto 20px; }
-    .extra-notice { font-size: 12px; color: #ef4444; font-weight: bold; margin-bottom: 10px; text-align: center; }
+    
+    /* EL BOTÓN "+" SOLICITADO */
+    .btn-plus-container { text-align: center; margin: 20px 0; }
+    .btn-plus { background: var(--primary); color: white; border: none; width: 55px; height: 55px; border-radius: 50%; font-size: 28px; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.4); display: inline-flex; align-items: center; justify-content: center; }
+    .btn-plus:active { transform: scale(0.95); }
   </style>
 </head>
 <body>
@@ -50,7 +53,7 @@
       <div class="nav-item" onclick="load('servicios')"><i class="fas fa-cut"></i> Servicios</div>
       <div class="nav-item" onclick="load('turnos')"><i class="fas fa-calendar-check"></i> Turnos</div>
       <div class="nav-item" onclick="load('caja')"><i class="fas fa-wallet"></i> Caja y Ranking</div>
-      <div class="nav-item" onclick="load('enlaces')"><i class="fas fa-link"></i> Enlaces de reservas</div>
+      <div class="nav-item" onclick="load('enlaces')"><i class="fas fa-link"></i> Enlaces de reserva</div>
     </div>
   </div>
 
@@ -61,108 +64,108 @@
       <button id="btn-pago" class="btn-black" style="background:#ef4444;" onclick="pagar()">Activar Suscripción ($15.000)</button>
     </div>
 
-    <div id="main-content">
-      </div>
+    <div id="view-content"></div>
   </div>
 
   <script>
-    let sucursalesCount = 0;
+    let totalSedes = 0;
     const tMenu = () => document.getElementById('menu').classList.toggle('active');
-    
     const toBase64 = f => new Promise((res, rej) => {
       const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result); r.onerror = e => rej(e);
     });
 
-    async function load(view) {
+    async function load(v) {
       if(document.getElementById('menu').classList.contains('active')) tMenu();
-      const content = document.getElementById('main-content');
-      const tk = localStorage.getItem('token') || "user_actual";
+      const content = document.getElementById('view-content');
+      const tk = localStorage.getItem('token') || "user_demo";
 
-      if(view === 'sucursales') {
+      if(v === 'sucursales') {
         const r = await fetch('/api/sucursales?token=' + tk);
         const data = await r.json();
-        sucursalesCount = data.length;
-        
-        // Actualizar precio en el botón de arriba
-        const total = 15000 + (Math.max(0, sucursalesCount - 1) * 5000);
-        document.getElementById('btn-pago').innerText = `Activar Suscripción ($${total.toLocaleString()})`;
+        totalSedes = data.length;
 
-        let html = '<h2>📍 Mis Sucursales</h2>';
+        // Precio dinámico
+        const monto = 15000 + (Math.max(0, totalSedes - 1) * 5000);
+        document.getElementById('btn-pago').innerText = `Activar Suscripción ($${monto.toLocaleString()})`;
+
+        let h = '<h2>📍 Mis Sucursales</h2>';
         
-        // Mostrar lista de existentes
+        // Listado de sucursales
         data.forEach(s => {
-          html += `<div class="card-suc">
+          h += `<div class="card-suc">
             <img src="${s.logoUrl || 'https://via.placeholder.com/50'}" class="img-preview">
             <div><b>${s.nombre}</b><br><small>${s.direccion}</small></div>
           </div>`;
         });
 
-        // BOTÓN "+" PARA AÑADIR (Solo si ya existe la principal)
-        if(sucursalesCount > 0) {
-          html += `<div style="text-align:center; margin-top:20px;">
-                    <button class="btn-plus" onclick="toggleForm()">+</button>
-                    <p style="font-size:13px; font-weight:bold; color:var(--dark);">Añadir más sucursales</p>
-                  </div>`;
+        // BOTÓN "+" VISIBLE (Solo aparece si ya existe la principal)
+        if(totalSedes > 0) {
+          h += `<div class="btn-plus-container">
+                  <button class="btn-plus" onclick="abrirFormExtra()">+</button>
+                  <p style="font-size:14px; font-weight:bold; color:var(--dark); margin-top:8px;">Añadir otra sucursal</p>
+                </div>`;
         }
 
-        // FORMULARIO (Se muestra siempre si no hay nada, o al dar click al "+")
-        html += `<div id="form-container" style="${sucursalesCount > 0 ? 'display:none;' : 'display:block;'} background:white; padding:20px; border-radius:15px; border:2px dashed #cbd5e1; margin-top:10px;">
-          <h3 id="form-title">${sucursalesCount === 0 ? 'Configurar Sucursal Principal' : 'Añadir Sucursal Extra'}</h3>
+        // FORMULARIO (Visible por defecto si no hay nada, oculto si hay sedes)
+        h += `<div id="form-sucursal" style="${totalSedes > 0 ? 'display:none;' : 'display:block;'} background:white; padding:20px; border-radius:15px; border:2px dashed #cbd5e1; margin-top:10px;">
+          <h3 id="titulo-f">${totalSedes === 0 ? 'Configurar Sucursal Principal' : 'Añadir Sucursal Extra'}</h3>
           
-          ${sucursalesCount > 0 ? '<p class="extra-notice">(*) Esta sucursal tiene un valor extra de $5.000 mensual.</p>' : '<p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Esta es tu sede central incluida en el plan base.</p>'}
+          <p id="msg-f" style="font-size:12px; font-weight:bold; color:${totalSedes === 0 ? 'var(--text-muted)' : '#ef4444'}; margin-bottom:15px;">
+            ${totalSedes === 0 ? 'Esta sucursal está incluida en tu plan base de $15.000.' : '(*) Esta sucursal adicional suma $5.000 a tu suscripción mensual.'}
+          </p>
           
-          <label style="font-size:12px;">Logo (Galería):</label>
-          <input id="sl" type="file" accept="image/*">
+          <label style="font-size:12px;">Logo de sucursal (Galería):</label>
+          <input id="f-logo" type="file" accept="image/*">
           
-          <input id="sn" placeholder="Nombre (Ej: Sucursal Centro)">
-          <input id="sd" placeholder="Dirección Completa">
+          <input id="f-nom" placeholder="Nombre de la sucursal">
+          <input id="f-dir" placeholder="Dirección">
           
-          <label style="font-size:12px;">Foto Local (Galería):</label>
-          <input id="sf" type="file" accept="image/*">
+          <label style="font-size:12px;">Foto del local (Galería):</label>
+          <input id="f-foto" type="file" accept="image/*">
           
-          <button class="btn-black" style="background:var(--primary); margin-top:10px;" onclick="saveS()">Guardar Sucursal</button>
+          <button class="btn-black" style="background:var(--primary); margin-top:10px;" onclick="guardar()">Guardar Sucursal</button>
         </div>`;
 
-        content.innerHTML = html;
+        content.innerHTML = h;
       } else {
-        content.innerHTML = `<h2>Sección ${view}</h2><p>Contenido de prueba para ${view}.</p>`;
+        content.innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-tools" style="font-size:40px; color:#ccc;"></i><h3>${v.toUpperCase()}</h3><p>Sección en configuración...</p></div>`;
       }
     }
 
-    function toggleForm() {
-      const f = document.getElementById('form-container');
-      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    function abrirFormExtra() {
+      const f = document.getElementById('form-sucursal');
+      f.style.display = 'block';
+      document.getElementById('titulo-f').innerText = "Añadir Sucursal Extra";
+      document.getElementById('msg-f').innerText = "(*) Esta sucursal adicional suma $5.000 a tu suscripción mensual.";
+      document.getElementById('msg-f').style.color = "#ef4444";
       f.scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function saveS() {
-      const sn = document.getElementById('sn').value;
-      const sd = document.getElementById('sd').value;
-      const fL = document.getElementById('sl').files[0];
-      const fF = document.getElementById('sf').files[0];
+    async function guardar() {
+      const n = document.getElementById('f-nom').value;
+      const d = document.getElementById('f-dir').value;
+      const l = document.getElementById('f-logo').files[0];
+      const f = document.getElementById('f-foto').files[0];
 
-      if(!sn || !sd) return alert('Nombre y Dirección son obligatorios');
+      if(!n || !d) return alert('Completa nombre y dirección');
 
       const body = {
-        token: localStorage.getItem('token') || "user_actual",
-        nombre: sn,
-        direccion: sd,
-        logo: fL ? await toBase64(fL) : "",
-        foto: fF ? await toBase64(fF) : ""
+        token: localStorage.getItem('token') || "user_demo",
+        nombre: n,
+        direccion: d,
+        logo: l ? await toBase64(l) : "",
+        foto: f ? await toBase64(f) : ""
       };
 
       await fetch('/api/sucursales', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
       });
-
       load('sucursales');
     }
 
     function pagar() {
-      const total = 15000 + (Math.max(0, sucursalesCount - 1) * 5000);
-      const msj = encodeURIComponent(`Hola, quiero activar mi suscripción de BookBarber. Total mensual: $${total.toLocaleString()}.`);
+      const monto = 15000 + (Math.max(0, totalSedes - 1) * 5000);
+      const msj = encodeURIComponent(`Hola MedinSur Dev, quiero renovar mi suscripción de BookBarber. Total: $${monto.toLocaleString()}.`);
       window.open(`https://wa.me/3515920795?text=${msj}`, '_blank');
     }
 
