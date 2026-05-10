@@ -81,7 +81,6 @@ app.get('/', (req, res) => {
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         .btn-black { background: var(--dark); color: white; border: none; width: 100%; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         
-        /* NAVBAR Y SIDEBAR */
         .navbar { background: var(--dark); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
         .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: white; z-index: 1000; transition: 0.3s; box-shadow: 5px 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
@@ -91,9 +90,8 @@ app.get('/', (req, res) => {
         .nav-item { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; color: var(--dark); text-decoration: none; font-weight: 500; cursor: pointer; }
         .nav-item i { margin-right: 15px; width: 20px; text-align: center; color: var(--primary); font-size: 18px; }
         
-        /* FOOTER MENU */
         .sidebar-footer { padding: 20px; border-top: 1px solid #eee; background: #fdfdfd; }
-        .btn-wa { display: flex; align-items: center; justify-content: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none; font-size: 14px; margin-bottom: 15px; }
+        .btn-wa { display: flex; align-items: center; justify-content: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none; font-size: 14px; margin-bottom: 15px; cursor: pointer; }
         .copy { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 15px; }
         .btn-out { background: none; border: 1px solid #ef4444; color: #ef4444; width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
@@ -138,9 +136,9 @@ app.get('/', (req, res) => {
           </div>
 
           <div class="sidebar-footer">
-            <a href="https://wa.me/5493513009673" target="_blank" class="btn-wa">
+            <div class="btn-wa" onclick="enviarMejora()">
               <i class="fab fa-whatsapp"></i> Solicita una mejora
-            </a>
+            </div>
             <div class="copy">MedinSur Dev © 2026</div>
             <button class="btn-out" onclick="logout()">Cerrar sesión</button>
           </div>
@@ -164,6 +162,12 @@ app.get('/', (req, res) => {
           const tk = localStorage.getItem('token');
           if(tk) show(tk, localStorage.getItem('nombre'));
         };
+
+        function enviarMejora() {
+          const nombreB = localStorage.getItem('nombre') || 'mi barbería';
+          const msj = encodeURIComponent(\`Hola MedinSur Dev, soy dueño de "\${nombreB}" y me gustaría solicitar una mejora en el sistema.\`);
+          window.open(\`https://wa.me/5493513009673?text=\${msj}\`, '_blank');
+        }
 
         function tAuth() {
           isL = !isL;
@@ -204,15 +208,22 @@ app.get('/', (req, res) => {
           if(v === 'sucursales') {
             const r = await fetch('/api/sucursales/' + tk);
             const data = await r.json();
+            
+            // Lógica de costo: 15k base (incluye 1ra sucursal) + 5k por cada extra
             const costo = 15000 + (Math.max(0, data.length - 1) * 5000);
             document.getElementById('pago').innerText = \`Activar Suscripción ($\${costo.toLocaleString()})\`;
             
             let h = '<h2>📍 Mis sucursales</h2>';
             data.forEach(s => h += \`<div style="background:white; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #eee;"><b>\${s.nombre}</b><br><small>\${s.direccion}</small></div>\`);
+            
             h += \`<div style="margin-top:20px; border-top:1px solid #ddd; padding-top:20px;">
-              <h3>\${data.length === 0 ? '+ Configurar Principal' : '+ Sucursal Extra'}</h3>
-              <input id="sn" placeholder="Nombre"><input id="sd" placeholder="Dirección">
-              <button class="btn-black" style="background:var(--primary)" onclick="saveS()">Guardar</button>
+              <h3>\${data.length === 0 ? '+ Configurar Sucursal Principal' : '+ Agregar Sucursal Extra'}</h3>
+              <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+                \${data.length === 0 ? 'Esta sucursal es la principal y está incluida en tu plan.' : 'Esta es una sucursal adicional y sumará $5.000 a tu cuota.'}
+              </p>
+              <input id="sn" placeholder="Nombre (Ej: Sucursal Centro)">
+              <input id="sd" placeholder="Dirección">
+              <button class="btn-black" style="background:var(--primary)" onclick="saveS()">Guardar Sucursal</button>
             </div>\`;
             main.innerHTML = h;
           } else {
@@ -221,6 +232,7 @@ app.get('/', (req, res) => {
         }
 
         async function saveS() {
+          if(!sn.value || !sd.value) return alert('Completa los campos');
           await fetch('/api/sucursales', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ token: localStorage.getItem('token'), nombre: sn.value, direccion: sd.value })
