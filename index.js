@@ -6,37 +6,40 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Configuración de la conexión a MongoDB
-// Usará la variable MONGO_URI que configuraste en el panel de Hostinger
-const mongoURI = process.env.MONGO_URI;
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Base de datos lista'))
+  .catch(err => console.error('❌ Error:', err));
 
-mongoose.connect(mongoURI)
-  .then(() => {
-    console.log('✅ Conexión exitosa a MongoDB Atlas');
-  })
-  .catch((err) => {
-    console.error('❌ Error al conectar a MongoDB:', err.message);
-  });
+// --- MODELO DE DATOS ---
+const BarberoSchema = new mongoose.Schema({
+  nombreNegocio: String,
+  email: { type: String, unique: true, required: true },
+  telefono: String,
+  password: { type: String, required: true },
+  fechaRegistro: { type: Date, default: Date.now }
+});
 
-// Ruta principal para verificar el estado
+const Barbero = mongoose.model('Barbero', BarberoSchema);
+
+// --- RUTAS (API) ---
+
+// 1. Ver estado
 app.get('/', (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? "CONECTADA ✅" : "DESCONECTADA ❌";
-  
-  res.send(`
-    <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-      <h1>Servidor de BookBarber V2</h1>
-      <p style="font-size: 1.2em;">Estado de la Base de Datos: <b style="color: ${dbStatus.includes('✅') ? 'green' : 'red'};">${dbStatus}</b></p>
-      <hr style="width: 50%; margin: 20px auto;">
-      <p style="color: gray;">MedinSur Dev &copy; 2026</p>
-    </div>
-  `);
+  res.send('<h1>Servidor BookBarber V2 Online</h1><p>Base de datos: CONECTADA ✅</p>');
 });
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+// 2. Ruta para registrar un barbero (Prueba)
+app.post('/api/registrar', async (req, res) => {
+  try {
+    const nuevoBarbero = new Barbero(req.body);
+    await nuevoBarbero.save();
+    res.status(201).json({ mensaje: "¡Barbero registrado con éxito!", id: nuevoBarbero._id });
+  } catch (error) {
+    res.status(400).json({ error: "Error al registrar: " + error.message });
+  }
 });
+
+app.listen(PORT, () => console.log(`🚀 Puerto: ${PORT}`));
