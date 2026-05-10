@@ -9,14 +9,18 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Esto busca el HTML en la carpeta /public
+app.use(express.static('public')); 
 
-// Conexión a DB
+// Conexión a Base de Datos
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ DB Conectada'))
-  .catch(err => console.log('❌ Error DB:', err));
+  .then(() => console.log('✅ DB Conectada correctamente'))
+  .catch(err => console.log('❌ Error al conectar DB:', err));
 
-// Aquí iremos agregando las rutas de "Mis Sucursales", "Staff", etc.
-// Por ahora, el servidor solo sirve para conectar la base de datos y mostrar la web.
+// Rutas (Importamos el archivo de sucursales)
+const sucursalesRoutes = require('./routes/sucursales');
+app.use('/api/sucursales', sucursalesRoutes);
 
-app.listen(PORT, () => console.log('🚀 Servidor en puerto ' + PORT));
+// Servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor MedinSur Dev corriendo en puerto ${PORT}`);
+});
