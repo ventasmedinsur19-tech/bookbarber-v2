@@ -4,13 +4,13 @@
   "description": "Sistema de gestión para barberías profesional",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "mongoose": "^7.0.0",
     "dotenv": "^16.0.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3"
   }
 }
