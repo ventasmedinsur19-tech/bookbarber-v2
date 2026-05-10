@@ -2,49 +2,46 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
+// Esquema de Sucursal
 const SucursalSchema = new mongoose.Schema({
   ownerEmail: String,
   nombre: String,
   direccion: String,
-  logoUrl: String,
-  fotoLocalUrl: String,
-  esPrincipal: Boolean,
-  fecha: { type: Date, default: Date.now }
+  logoUrl: { type: String, default: "" },
+  fotoLocalUrl: { type: String, default: "" },
+  esPrincipal: { type: Boolean, default: false },
+  creadoEn: { type: Date, default: Date.now }
 });
 
 const Sucursal = mongoose.model('Sucursal', SucursalSchema);
 
-// GET: Obtener sucursales
+// Listar sucursales
 router.get('/', async (req, res) => {
-  try {
-    const data = await Sucursal.find({ ownerEmail: req.query.token });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const sedes = await Sucursal.find({ ownerEmail: req.query.token });
+  res.json(sedes);
 });
 
-// POST: Guardar sucursal (Principal o Extra)
+// Guardar nueva sucursal
 router.post('/', async (req, res) => {
   try {
     const { token, nombre, direccion, logo, foto } = req.body;
     
-    // Verificamos si es la primera
-    const cuenta = await Sucursal.countDocuments({ ownerEmail: token });
+    // Si es la primera, es la Principal
+    const yaTienePrincipal = await Sucursal.findOne({ ownerEmail: token });
     
-    const nueva = new Sucursal({
-      ownerEmail: token,
-      nombre,
-      direccion,
-      logoUrl: logo,
+    const nueva = new Sucursal({ 
+      ownerEmail: token, 
+      nombre, 
+      direccion, 
+      logoUrl: logo, 
       fotoLocalUrl: foto,
-      esPrincipal: (cuenta === 0)
+      esPrincipal: !yaTienePrincipal 
     });
-
+    
     await nueva.save();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Error al guardar la sucursal' });
   }
 });
 
