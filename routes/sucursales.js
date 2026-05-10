@@ -2,46 +2,49 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Definición del Esquema
 const SucursalSchema = new mongoose.Schema({
   ownerEmail: String,
   nombre: String,
   direccion: String,
-  logoUrl: { type: String, default: "" },      // Aquí se guarda el String Base64
-  fotoLocalUrl: { type: String, default: "" }, // Aquí se guarda el String Base64
-  esPrincipal: { type: Boolean, default: false },
-  fechaRegistro: { type: Date, default: Date.now }
+  logoUrl: String,
+  fotoLocalUrl: String,
+  esPrincipal: Boolean,
+  fecha: { type: Date, default: Date.now }
 });
 
 const Sucursal = mongoose.model('Sucursal', SucursalSchema);
 
-// Obtener sucursales de un usuario
+// GET: Obtener sucursales
 router.get('/', async (req, res) => {
-  const sucursales = await Sucursal.find({ ownerEmail: req.query.token });
-  res.json(sucursales);
+  try {
+    const data = await Sucursal.find({ ownerEmail: req.query.token });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Guardar nueva sucursal
+// POST: Guardar sucursal (Principal o Extra)
 router.post('/', async (req, res) => {
   try {
-    const { token, nombre, direccion, logoBase64, fotoBase64 } = req.body;
+    const { token, nombre, direccion, logo, foto } = req.body;
     
-    // Verificamos si ya tiene una principal para marcar las siguientes como extras
-    const tienePrincipal = await Sucursal.findOne({ ownerEmail: token, esPrincipal: true });
+    // Verificamos si es la primera
+    const cuenta = await Sucursal.countDocuments({ ownerEmail: token });
     
-    const nueva = new Sucursal({ 
-      ownerEmail: token, 
-      nombre, 
-      direccion, 
-      logoUrl: logoBase64, 
-      fotoLocalUrl: fotoBase64,
-      esPrincipal: !tienePrincipal // Si no tiene ninguna, esta es la principal
+    const nueva = new Sucursal({
+      ownerEmail: token,
+      nombre,
+      direccion,
+      logoUrl: logo,
+      fotoLocalUrl: foto,
+      esPrincipal: (cuenta === 0)
     });
-    
+
     await nueva.save();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: 'Error al guardar sucursal' });
+    res.status(500).json({ error: err.message });
   }
 });
 
