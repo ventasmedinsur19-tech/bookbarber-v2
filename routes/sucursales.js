@@ -2,46 +2,56 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Esquema de Sucursal
+// Definición del esquema (Asegúrate de que coincida con tu DB)
 const SucursalSchema = new mongoose.Schema({
   ownerEmail: String,
   nombre: String,
   direccion: String,
-  logoUrl: { type: String, default: "" },
-  fotoLocalUrl: { type: String, default: "" },
-  esPrincipal: { type: Boolean, default: false },
-  creadoEn: { type: Date, default: Date.now }
+  logoUrl: String,
+  fotoLocalUrl: String,
+  esPrincipal: Boolean,
+  fechaRegistro: { type: Date, default: Date.now }
 });
 
-const Sucursal = mongoose.model('Sucursal', SucursalSchema);
+// Evita errores de re-compilación de modelo en desarrollo
+const Sucursal = mongoose.models.Sucursal || mongoose.model('Sucursal', SucursalSchema);
 
-// Listar sucursales
+// GET: Obtener sucursales del usuario
 router.get('/', async (req, res) => {
-  const sedes = await Sucursal.find({ ownerEmail: req.query.token });
-  res.json(sedes);
+  try {
+    const token = req.query.token;
+    if (!token) return res.status(400).json({ error: "Token requerido" });
+    
+    const sedes = await Sucursal.find({ ownerEmail: token }).sort({ fechaRegistro: 1 });
+    res.json(sedes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Guardar nueva sucursal
+// POST: Guardar o crear sucursal
 router.post('/', async (req, res) => {
   try {
     const { token, nombre, direccion, logo, foto } = req.body;
     
-    // Si es la primera, es la Principal
-    const yaTienePrincipal = await Sucursal.findOne({ ownerEmail: token });
+    // Verificamos si ya tiene una principal para marcar esta como extra si es necesario
+    const cuentaPrevia = await Sucursal.countDocuments({ ownerEmail: token });
     
-    const nueva = new Sucursal({ 
-      ownerEmail: token, 
-      nombre, 
-      direccion, 
-      logoUrl: logo, 
+    const nuevaSucursal = new Sucursal({
+      ownerEmail: token,
+      nombre: nombre,
+      direccion: direccion,
+      logoUrl: logo, // Aquí llega el Base64 de la imagen
       fotoLocalUrl: foto,
-      esPrincipal: !yaTienePrincipal 
+      esPrincipal: cuentaPrevia === 0
     });
-    
-    await nueva.save();
-    res.json({ ok: true });
+
+    await nuevaSucursal.save();
+    console.log("Sucursal guardada para:", token);
+    res.status(200).json({ ok: true, mensaje: "Guardado exitoso" });
   } catch (err) {
-    res.status(500).json({ error: 'Error al guardar la sucursal' });
+    console.error("Error en POST sucursales:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
