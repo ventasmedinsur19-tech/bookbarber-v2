@@ -1,0 +1,16 @@
+{
+  "name": "bookbarber-online",
+  "version": "1.0.0",
+  "description": "Sistema de gestión para barberías",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.9.7",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10"
+  }
+}
+
