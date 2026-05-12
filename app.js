@@ -71,3 +71,7 @@ app.get('/dashboard', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3000, () => console.log("BookBarber corriendo..."));
+// Redirigir la raíz al registro para que no de error
+app.get('/', (req, res) => {
+  res.redirect('/registro');
+});
