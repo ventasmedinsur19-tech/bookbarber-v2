@@ -1,16 +1,20 @@
 {
   "name": "bookbarber-online",
-  "version": "1.0.0",
-  "description": "Sistema de gestión para barberías",
+  "version": "2.0.0",
+  "description": "Sistema de gestión SaaS para barberías - MedinSur Dev",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "mysql2": "^3.9.7",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
-    "ejs": "^3.1.10"
-  }
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.9.7"
+  },
+  "author": "MedinSur Dev",
+  "license": "ISC"
 }
-
