@@ -28,7 +28,7 @@ const db = mysql.createPool({
   port: process.env.DB_PORT || 3306
 }).promise();
 
-// Middleware de Protección (Evita que entren sin loguearse)
+// Middleware de Protección
 const isAuth = (req, res, next) => {
   if (req.session.userId) return next();
   res.redirect('/login');
@@ -77,7 +77,7 @@ app.post('/staff/guardar', isAuth, async (req, res) => {
   res.redirect('/staff');
 });
 
-// --- GESTIÓN DE SERVICIOS (REPARADA) ---
+// --- GESTIÓN DE SERVICIOS ---
 app.get('/servicios', isAuth, async (req, res) => {
   try {
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
@@ -86,11 +86,8 @@ app.get('/servicios', isAuth, async (req, res) => {
       FROM servicios ser 
       JOIN sucursales s ON ser.sucursal_id = s.id 
       WHERE s.usuario_id = ?`, [req.session.userId]);
-    
     res.render('servicios_gestion', { sucursales, servicios }); 
-  } catch (e) {
-    res.status(500).send("Error al cargar servicios: " + e.message);
-  }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 app.post('/servicios/guardar', isAuth, async (req, res) => {
@@ -99,9 +96,31 @@ app.post('/servicios/guardar', isAuth, async (req, res) => {
   res.redirect('/servicios');
 });
 
-// --- RUTAS FUTURAS INTEGRADAS ---
-// (Estas rutas ya están listas para cuando crees los archivos horarios.ejs, turnos.ejs y caja.ejs)
-app.get('/horarios', isAuth, (req, res) => res.render('horarios'));
+// --- GESTIÓN DE HORARIOS ---
+app.get('/horarios', isAuth, async (req, res) => {
+  try {
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    const [horarios] = await db.query(`
+      SELECT h.*, s.nombre as sucursal_nombre 
+      FROM horarios h 
+      JOIN sucursales s ON h.sucursal_id = s.id 
+      WHERE s.usuario_id = ?
+      ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'), h.hora_inicio`, 
+      [req.session.userId]);
+    res.render('horarios', { sucursales, horarios });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/horarios/guardar', isAuth, async (req, res) => {
+  try {
+    const { sucursal_id, dia, hora_inicio, hora_fin } = req.body;
+    await db.query('INSERT INTO horarios (sucursal_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
+    [sucursal_id, dia, hora_inicio, hora_fin]);
+    res.redirect('/horarios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- TURNOS Y CAJA (RUTAS LISTAS) ---
 app.get('/turnos', isAuth, (req, res) => res.render('turnos'));
 app.get('/caja', isAuth, (req, res) => res.render('caja'));
 
