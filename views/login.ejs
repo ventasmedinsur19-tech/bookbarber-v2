@@ -1,7 +1,75 @@
-<form action="/auth/login" method="POST">
-  <input type="text" name="whatsapp" placeholder="WhatsApp" required>
-  <input type="password" name="password" placeholder="Contraseña" required>
-  <button type="submit">Entrar</button>
-</form>
-<p>¿No tienes cuenta? <a href="/registro">Regístrate aquí</a></p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | BookBarber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #0f0f0f; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
 
+    <div class="w-full max-w-sm bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-orange-500 tracking-tight">BookBarber</h1>
+            <p class="text-gray-400 text-sm mt-2">Panel de Gestión MedinSur Dev</p>
+        </div>
+
+        <% if (locals.error) { %>
+            <div class="bg-red-900/20 border border-red-500 text-red-500 p-3 rounded-lg text-xs mb-6 text-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/auth/login" method="POST" class="space-y-5">
+            
+            <div>
+                <label class="block text-xs text-gray-500 mb-1 uppercase font-bold tracking-widest">WhatsApp</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-600">
+                        <i class="fab fa-whatsapp"></i>
+                    </span>
+                    <input type="text" 
+                           name="whatsapp" 
+                           placeholder="Ej: 549351..." 
+                           required 
+                           class="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 pl-10 text-white outline-none focus:border-orange-500 transition-all">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1 uppercase font-bold tracking-widest">Contraseña</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-600">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    <input type="password" 
+                           name="password" 
+                           placeholder="••••••••" 
+                           required 
+                           class="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 pl-10 text-white outline-none focus:border-orange-500 transition-all">
+                </div>
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-black font-extrabold py-3 rounded-lg transition-all transform active:scale-95 shadow-lg shadow-orange-500/20 mt-2">
+                ENTRAR AL PANEL
+            </button>
+
+        </form>
+
+        <div class="mt-8 text-center border-t border-gray-800 pt-6">
+            <p class="text-gray-500 text-xs">¿Todavía no tienes cuenta?</p>
+            <a href="/registro" class="text-orange-500 font-bold hover:text-orange-400 transition-colors text-sm">
+                Regístrate aquí
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>
