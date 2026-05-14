@@ -12,7 +12,8 @@ app.set('view engine', 'ejs');
 app.use(session({
   secret: 'medinsur_secret_key',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
 }));
 
 const db = mysql.createPool({
@@ -23,50 +24,81 @@ const db = mysql.createPool({
   port: process.env.DB_PORT || 3306
 }).promise();
 
-// --- MIDDLEWARE DE PROTECCIÓN ---
+// Middleware de Protección
 const isAuth = (req, res, next) => {
   if (req.session.userId) return next();
   res.redirect('/login');
 };
 
-// --- RUTAS DE NAVEGACIÓN ---
+// --- RUTAS DE NAVEGACIÓN BÁSICA ---
 app.get('/', (req, res) => res.redirect('/dashboard'));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/registro', (req, res) => res.render('registro'));
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// --- DASHBOARD PRINCIPAL ---
+// --- DASHBOARD ---
 app.get('/dashboard', isAuth, async (req, res) => {
   try {
     const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
-    
     const fechaReg = new Date(user[0].fecha_registro);
-    const diasPasados = Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24));
-    const diasRestantes = Math.max(0, 30 - diasPasados);
-
-    res.render('dashboard', { user: user[0], sucursales, diasRestantes, pagina: 'inicio' });
+    const diasRestantes = Math.max(0, 30 - Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24)));
+    res.render('dashboard', { user: user[0], sucursales, diasRestantes });
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- RUTAS DE SECCIONES (A completar archivos .ejs luego) ---
-app.get('/sucursales', isAuth, (req, res) => res.render('sucursales_gestion'));
-app.get('/staff', isAuth, (req, res) => res.render('staff'));
+// --- GESTIÓN DE SUCURSALES ---
+app.get('/sucursales', isAuth, async (req, res) => {
+  const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+  res.render('sucursales_gestion', { sucursales });
+});
+
+app.post('/sucursales/guardar', isAuth, async (req, res) => {
+  const { nombre, direccion, logo_url, foto_url } = req.body;
+  await db.query('INSERT INTO sucursales (usuario_id, nombre, direccion, logo_url, foto_url) VALUES (?, ?, ?, ?, ?)', 
+  [req.session.userId, nombre, direccion, logo_url, foto_url]);
+  res.redirect('/sucursales');
+});
+
+// --- GESTIÓN DE STAFF (BARBEROS) ---
+app.get('/staff', isAuth, async (req, res) => {
+  const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+  const [barberos] = await db.query('SELECT b.*, s.nombre as sucursal_nombre FROM barberos b JOIN sucursales s ON b.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
+  res.render('staff', { sucursales, barberos });
+});
+
+app.post('/staff/guardar', isAuth, async (req, res) => {
+  const { sucursal_id, nombre, foto_url } = req.body;
+  await db.query('INSERT INTO barberos (sucursal_id, nombre, foto_url) VALUES (?, ?, ?)', [sucursal_id, nombre, foto_url]);
+  res.redirect('/staff');
+});
+
+// --- GESTIÓN DE SERVICIOS ---
+app.get('/servicios', isAuth, async (req, res) => {
+  const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+  const [servicios] = await db.query('SELECT ser.*, s.nombre as sucursal_nombre FROM servicios ser JOIN sucursales s ON ser.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
+  res.render('servicios', { sucursales, servicios });
+});
+
+app.post('/servicios/guardar', isAuth, async (req, res) => {
+  const { sucursal_id, nombre, precio, duracion } = req.body;
+  await db.query('INSERT INTO servicios (sucursal_id, nombre, precio, duracion) VALUES (?, ?, ?, ?)', [sucursal_id, nombre, precio, duracion]);
+  res.redirect('/servicios');
+});
+
+// --- GESTIÓN DE HORARIOS Y TURNOS ---
 app.get('/horarios', isAuth, (req, res) => res.render('horarios'));
-app.get('/servicios', isAuth, (req, res) => res.render('servicios'));
 app.get('/turnos', isAuth, (req, res) => res.render('turnos'));
 app.get('/caja', isAuth, (req, res) => res.render('caja'));
 
-// --- LÓGICA DE AUTENTICACIÓN ---
+// --- AUTENTICACIÓN ---
 app.post('/auth/registro', async (req, res) => {
   const { whatsapp, password, nombre_barberia } = req.body;
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    const [u] = await db.query('INSERT INTO usuarios (whatsapp, password) VALUES (?, ?)', [whatsapp, hash]);
-    await db.query('INSERT INTO sucursales (usuario_id, nombre) VALUES (?, ?)', [u.insertId, nombre_barberia]);
-    req.session.userId = u.insertId;
-    res.redirect('/dashboard');
-  } catch (e) { res.status(500).send("Error: " + e.message); }
+  const hash = await bcrypt.hash(password, 10);
+  const [u] = await db.query('INSERT INTO usuarios (whatsapp, password) VALUES (?, ?)', [whatsapp, hash]);
+  await db.query('INSERT INTO sucursales (usuario_id, nombre) VALUES (?, ?)', [u.insertId, nombre_barberia]);
+  req.session.userId = u.insertId;
+  res.redirect('/dashboard');
 });
 
 app.post('/auth/login', async (req, res) => {
@@ -76,7 +108,7 @@ app.post('/auth/login', async (req, res) => {
     req.session.userId = u[0].id;
     return res.redirect('/dashboard');
   }
-  res.send("Credenciales incorrectas");
+  res.send("WhatsApp o contraseña incorrectos.");
 });
 
-app.listen(process.env.PORT || 3000, () => console.log("MedinSur Dev Ready"));
+app.listen(process.env.PORT || 3000, () => console.log("Servidor MedinSur Dev Activo"));
