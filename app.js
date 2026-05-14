@@ -9,13 +9,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.set('view engine', 'ejs');
 
+// Servir archivos estáticos si los tienes (ej: css, imágenes locales)
+app.use(express.static('public'));
+
 app.use(session({
-  secret: 'medinsur_secret_key',
+  secret: process.env.SESSION_SECRET || 'medinsur_secret_key', // Usa variable si existe
   resave: false,
   saveUninitialized: true,
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
 }));
 
+// Pool de conexión usando tus variables de Hostinger
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -30,13 +34,12 @@ const isAuth = (req, res, next) => {
   res.redirect('/login');
 };
 
-// --- RUTAS DE NAVEGACIÓN BÁSICA ---
+// --- RUTAS ---
 app.get('/', (req, res) => res.redirect('/dashboard'));
-app.get('/login', (req, res) => res.render('login'));
+app.get('/login', (req, res) => res.render('login', { error: null }));
 app.get('/registro', (req, res) => res.render('registro'));
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// --- DASHBOARD ---
 app.get('/dashboard', isAuth, async (req, res) => {
   try {
     const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
@@ -47,7 +50,6 @@ app.get('/dashboard', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- GESTIÓN DE SUCURSALES ---
 app.get('/sucursales', isAuth, async (req, res) => {
   const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
   res.render('sucursales_gestion', { sucursales });
@@ -60,7 +62,6 @@ app.post('/sucursales/guardar', isAuth, async (req, res) => {
   res.redirect('/sucursales');
 });
 
-// --- GESTIÓN DE STAFF (BARBEROS) ---
 app.get('/staff', isAuth, async (req, res) => {
   const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
   const [barberos] = await db.query('SELECT b.*, s.nombre as sucursal_nombre FROM barberos b JOIN sucursales s ON b.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
@@ -73,25 +74,7 @@ app.post('/staff/guardar', isAuth, async (req, res) => {
   res.redirect('/staff');
 });
 
-// --- GESTIÓN DE SERVICIOS ---
-app.get('/servicios', isAuth, async (req, res) => {
-  const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
-  const [servicios] = await db.query('SELECT ser.*, s.nombre as sucursal_nombre FROM servicios ser JOIN sucursales s ON ser.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
-  res.render('servicios', { sucursales, servicios });
-});
-
-app.post('/servicios/guardar', isAuth, async (req, res) => {
-  const { sucursal_id, nombre, precio, duracion } = req.body;
-  await db.query('INSERT INTO servicios (sucursal_id, nombre, precio, duracion) VALUES (?, ?, ?, ?)', [sucursal_id, nombre, precio, duracion]);
-  res.redirect('/servicios');
-});
-
-// --- GESTIÓN DE HORARIOS Y TURNOS ---
-app.get('/horarios', isAuth, (req, res) => res.render('horarios'));
-app.get('/turnos', isAuth, (req, res) => res.render('turnos'));
-app.get('/caja', isAuth, (req, res) => res.render('caja'));
-
-// --- AUTENTICACIÓN ---
+// --- AUTH ---
 app.post('/auth/registro', async (req, res) => {
   const { whatsapp, password, nombre_barberia } = req.body;
   const hash = await bcrypt.hash(password, 10);
@@ -108,7 +91,7 @@ app.post('/auth/login', async (req, res) => {
     req.session.userId = u[0].id;
     return res.redirect('/dashboard');
   }
-  res.send("WhatsApp o contraseña incorrectos.");
+  res.render('login', { error: 'WhatsApp o contraseña incorrectos.' });
 });
 
-app.listen(process.env.PORT || 3000, () => console.log("Servidor MedinSur Dev Activo"));
+app.listen(process.env.PORT || 3000, () => console.log("Servidor BookBarber Activo"));
