@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja y Balances | BookBarber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>body { background-color: #0d0d0d; color: #e5e5e5; font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="p-4 sm:p-8">
+    <div class="max-w-5xl mx-auto">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+            <div>
+                <a href="/dashboard" class="text-orange-500 text-sm font-bold uppercase tracking-widest"><i class="fas fa-chevron-left mr-2"></i>Panel</a>
+                <h1 class="text-3xl font-black text-white mt-1">CAJA Y RANKING</h1>
+            </div>
+            
+            <div class="flex bg-[#1a1a1a] p-1 rounded-lg border border-gray-800">
+                <a href="/caja?periodo=hoy" class="px-4 py-2 rounded text-xs font-bold <%= periodo === 'hoy' ? 'bg-orange-500 text-black' : 'text-gray-500 hover:text-white' %>">HOY</a>
+                <a href="/caja?periodo=semana" class="px-4 py-2 rounded text-xs font-bold <%= periodo === 'semana' ? 'bg-orange-500 text-black' : 'text-gray-500 hover:text-white' %>">SEMANA</a>
+                <a href="/caja?periodo=mes" class="px-4 py-2 rounded text-xs font-bold <%= periodo === 'mes' ? 'bg-orange-500 text-black' : 'text-gray-500 hover:text-white' %>">MES</a>
+                <a href="/caja?periodo=año" class="px-4 py-2 rounded text-xs font-bold <%= periodo === 'año' ? 'bg-orange-500 text-black' : 'text-gray-500 hover:text-white' %>">AÑO</a>
+            </div>
+        </header>
+
+        <div class="bg-[#141414] border border-gray-800 p-8 rounded-2xl mb-10">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-widest">Ingresos totales por servicios finalizados</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <span class="text-4xl font-black text-white">$<%= total.toLocaleString('es-AR') %></span>
+                <span class="text-orange-500 font-bold text-sm">ARS</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            
+            <section>
+                <h3 class="text-white font-bold mb-6 text-sm uppercase tracking-tighter border-b border-gray-800 pb-2">Desempeño del Staff</h3>
+                <div class="space-y-3">
+                    <% if (ranking.length === 0) { %>
+                        <p class="text-gray-600 text-sm">Sin datos para este periodo.</p>
+                    <% } %>
+                    <% ranking.forEach((item, index) => { %>
+                        <div class="flex items-center justify-between p-4 bg-[#1a1a1a] border border-gray-800 rounded-xl">
+                            <div class="flex items-center gap-4">
+                                <span class="text-lg font-black text-gray-700">0<%= index + 1 %></span>
+                                <div>
+                                    <p class="font-bold text-white uppercase text-sm"><%= item.nombre %></p>
+                                    <p class="text-[10px] text-gray-500"><%= item.cantidad %> servicios completados</p>
+                                </div>
+                            </div>
+                            <p class="text-orange-500 font-black">$<%= item.total_generado.toLocaleString('es-AR') %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="text-white font-bold mb-6 text-sm uppercase tracking-tighter border-b border-gray-800 pb-2">Últimos Registros Exitosos</h3>
+                <div class="bg-[#141414] border border-gray-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="bg-[#1a1a1a] text-gray-500 uppercase font-bold">
+                                <th class="p-4">Servicio / Barbero</th>
+                                <th class="p-4 text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            <% movimientos.forEach(m => { %>
+                                <tr>
+                                    <td class="p-4 text-gray-300">
+                                        <div class="font-bold text-white"><%= m.servicio %></div>
+                                        <div class="text-[10px] text-gray-600"><%= m.barbero %> • <%= new Date(m.fecha).toLocaleDateString() %></div>
+                                    </td>
+                                    <td class="p-4 text-right text-orange-500 font-black">
+                                        $<%= m.precio %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</body>
+</html>
+
