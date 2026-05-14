@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff | BookBarber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://widget.cloudinary.com/v2.0/global/all.js" type="text/javascript"></script>
+    <style>body { background-color: #0f0f0f; color: #f0f0f0; }</style>
+</head>
+<body class="p-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-4 mb-8">
+            <a href="/dashboard" class="text-orange-500"><i class="fas fa-arrow-left"></i> Volver</a>
+            <h1 class="text-2xl font-bold">Gestión de Staff</h1>
+        </div>
+
+        <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 mb-8">
+            <h2 class="text-lg font-bold mb-4 text-orange-500">Nuevo Barbero/a</h2>
+            <form action="/staff/guardar" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Sucursal</label>
+                    <select name="sucursal_id" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm text-white">
+                        <% sucursales.forEach(s => { %>
+                            <option value="<%= s.id %>"><%= s.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Nombre Completo</label>
+                    <input type="text" name="nombre" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm text-white outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Foto de Perfil</label>
+                    <button type="button" onclick="subirFoto()" class="w-full bg-gray-800 border border-dashed border-gray-600 p-2 rounded text-xs hover:bg-gray-700">
+                        <i class="fas fa-camera mr-2"></i> <span id="txt-foto">Subir Foto</span>
+                    </button>
+                    <input type="hidden" name="foto_url" id="input-foto">
+                </div>
+                <button type="submit" class="w-full bg-orange-500 text-black font-bold py-3 rounded mt-2">Registrar Staff</button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <% barberos.forEach(b => { %>
+                <div class="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800 flex items-center gap-4">
+                    <img src="<%= b.foto_url || 'https://via.placeholder.com/100?text=Barbero' %>" class="w-14 h-14 rounded-full object-cover border-2 border-orange-500">
+                    <div>
+                        <h3 class="font-bold text-white"><%= b.nombre %></h3>
+                        <p class="text-[10px] text-orange-500 font-bold uppercase"><%= b.sucursal_nombre %></p>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <script>
+        function subirFoto() {
+            cloudinary.openUploadWidget({
+                cloudName: 'daffkqpnx',
+                uploadPreset: 'bookbarber',
+                sources: ['local', 'camera'],
+                cropping: true,
+                croppingAspectRatio: 1,
+                multiple: false
+            }, (error, result) => {
+                if (!error && result.event === "success") { 
+                    document.getElementById('input-foto').value = result.info.secure_url;
+                    document.getElementById('txt-foto').innerText = "¡Foto Lista!";
+                    document.getElementById('txt-foto').style.color = "#22c55e";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
