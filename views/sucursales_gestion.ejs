@@ -3,61 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sucursales | MedinSur Dev</title>
+    <title>Sucursales | BookBarber</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Widget de Cloudinary -->
     <script src="https://widget.cloudinary.com/v2.0/global/all.js" type="text/javascript"></script>
     <style>body { background-color: #0f0f0f; color: #f0f0f0; }</style>
 </head>
 <body class="p-4">
-
     <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-4 mb-8">
             <a href="/dashboard" class="text-orange-500"><i class="fas fa-arrow-left"></i> Volver</a>
-            <h1 class="text-2xl font-bold">Gestión de Sucursales</h1>
+            <h1 class="text-2xl font-bold">Mis Sucursales</h1>
         </div>
 
         <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 mb-8">
-            <h2 class="text-lg font-bold mb-4 text-orange-500">Registrar Nueva Sucursal</h2>
+            <h2 class="text-lg font-bold mb-4 text-orange-500">Nueva Sucursal</h2>
             <form action="/sucursales/guardar" method="POST" class="grid grid-cols-1 gap-4">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">Nombre de la Barbería *</label>
-                        <input type="text" name="nombre" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm focus:outline-none focus:border-orange-500">
+                        <label class="block text-xs text-gray-500 mb-1">Nombre</label>
+                        <input type="text" name="nombre" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm text-white focus:border-orange-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Dirección</label>
-                        <input type="text" name="direccion" class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm">
+                        <input type="text" name="direccion" class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-2 text-sm text-white">
                     </div>
                 </div>
 
-                <!-- Botones de Subida -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">Logo de la Barbería</label>
-                        <button type="button" onclick="subirImagen('logo')" class="w-full bg-gray-800 border border-dashed border-gray-600 p-2 rounded text-xs hover:bg-gray-700 transition">
-                            <i class="fas fa-upload mr-2"></i> <span id="txt-logo">Subir Logo</span>
+                        <label class="block text-xs text-gray-500 mb-1">Logo</label>
+                        <button type="button" onclick="subir('logo')" class="w-full bg-gray-800 border border-dashed border-gray-600 p-2 rounded text-xs hover:bg-gray-700">
+                            <i class="fas fa-upload mr-2"></i> <span id="txt-logo">Cargar Logo</span>
                         </button>
                         <input type="hidden" name="logo_url" id="input-logo">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">Foto del Local</label>
-                        <button type="button" onclick="subirImagen('foto')" class="w-full bg-gray-800 border border-dashed border-gray-600 p-2 rounded text-xs hover:bg-gray-700 transition">
-                            <i class="fas fa-camera mr-2"></i> <span id="txt-foto">Subir Foto Local</span>
+                        <label class="block text-xs text-gray-500 mb-1">Foto Local</label>
+                        <button type="button" onclick="subir('foto')" class="w-full bg-gray-800 border border-dashed border-gray-600 p-2 rounded text-xs hover:bg-gray-700">
+                            <i class="fas fa-camera mr-2"></i> <span id="txt-foto">Cargar Foto</span>
                         </button>
                         <input type="hidden" name="foto_url" id="input-foto">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-orange-500 text-black font-bold py-3 rounded mt-4 hover:bg-orange-600 transition">
-                    Guardar Sucursal
-                </button>
+                <button type="submit" class="w-full bg-orange-500 text-black font-bold py-3 rounded mt-4">Guardar Sucursal</button>
             </form>
         </div>
 
-        <!-- Lista de Locales -->
         <div class="space-y-4">
             <% sucursales.forEach(s => { %>
                 <div class="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800 flex justify-between items-center">
@@ -68,32 +61,23 @@
                             <p class="text-xs text-gray-500"><%= s.direccion %></p>
                         </div>
                     </div>
-                    <button class="text-red-900 hover:text-red-500"><i class="fas fa-trash"></i></button>
                 </div>
             <% }) %>
         </div>
     </div>
 
     <script>
-        // Configuración de Cloudinary
-        const cloudinaryCloudName = "tu_cloud_name"; // Esto lo obtenemos al crear la cuenta gratuita
-        const uploadPreset = "ml_default"; 
-
-        function subirImagen(tipo) {
+        function subir(tipo) {
             cloudinary.openUploadWidget({
-                cloudName: 'demo', // Cambia 'demo' por tu usuario de Cloudinary
-                uploadPreset: 'unsigned_upload', // Cambia esto por tu preset
+                cloudName: 'daffkqpnx',
+                uploadPreset: 'bookbarber',
                 sources: ['local', 'camera'],
-                showAdvancedOptions: false,
-                cropping: true,
-                multiple: false,
-                defaultSource: 'local',
-                styles: { palette: { window: "#1A1A1A", sourceBg: "#101010", windowBorder: "#333", tabIcon: "#F97316", textDark: "#000", textLight: "#FFFFFF", mainMenuHover: "#F97316", link: "#F97316", action: "#F97316", inProgress: "#F97316", complete: "#22C55E", error: "#EF4444", textMain: "#F0F0F0" } }
+                multiple: false
             }, (error, result) => {
-                if (!error && result && result.event === "success") { 
+                if (!error && result.event === "success") { 
                     document.getElementById('input-' + tipo).value = result.info.secure_url;
-                    document.getElementById('txt-' + tipo).innerText = "¡Imagen Lista!";
-                    document.getElementById('txt-' + tipo).classList.add("text-green-500");
+                    document.getElementById('txt-' + tipo).innerText = "¡Listo!";
+                    document.getElementById('txt-' + tipo).style.color = "#22c55e";
                 }
             });
         }
