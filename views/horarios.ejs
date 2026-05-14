@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horarios | BookBarber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>body { background-color: #0f0f0f; color: #f0f0f0; }</style>
+</head>
+<body class="p-4">
+    <div class="max-w-4xl mx-auto">
+        
+        <div class="flex items-center gap-4 mb-8">
+            <a href="/dashboard" class="text-orange-500 hover:text-orange-400 transition"><i class="fas fa-arrow-left"></i> Volver</a>
+            <h1 class="text-2xl font-bold">Gestión de Horarios</h1>
+        </div>
+
+        <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 mb-8 shadow-lg">
+            <h2 class="text-lg font-bold mb-4 text-orange-500"><i class="far fa-clock mr-2"></i>Añadir Horario</h2>
+            <form action="/horarios/guardar" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                
+                <div class="md:col-span-4">
+                    <label class="block text-xs text-gray-500 mb-1 font-bold uppercase">Sucursal</label>
+                    <select name="sucursal_id" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-3 text-sm text-white outline-none focus:border-orange-500">
+                        <% sucursales.forEach(s => { %>
+                            <option value="<%= s.id %>"><%= s.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-gray-500 mb-1 font-bold uppercase">Día de la semana</label>
+                    <select name="dia" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-3 text-sm text-white outline-none focus:border-orange-500">
+                        <option value="Lunes">Lunes</option>
+                        <option value="Martes">Martes</option>
+                        <option value="Miércoles">Miércoles</option>
+                        <option value="Jueves">Jueves</option>
+                        <option value="Viernes">Viernes</option>
+                        <option value="Sábado">Sábado</option>
+                        <option value="Domingo">Domingo</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1 font-bold uppercase">Apertura</label>
+                    <input type="time" name="hora_inicio" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-3 text-sm text-white outline-none focus:border-orange-500" style="color-scheme: dark;">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1 font-bold uppercase">Cierre</label>
+                    <input type="time" name="hora_fin" required class="w-full bg-[#2a2a2a] border border-gray-700 rounded p-3 text-sm text-white outline-none focus:border-orange-500" style="color-scheme: dark;">
+                </div>
+
+                <div class="md:col-span-4 mt-2">
+                    <button type="submit" class="w-full bg-orange-500 text-black font-bold py-3 rounded-lg hover:bg-orange-600 transition-all active:scale-95 shadow-lg shadow-orange-500/20">
+                        Guardar Horario
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <h3 class="text-orange-500 text-sm font-bold uppercase tracking-wider mb-4">Horarios Configurados</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <% if (horarios.length === 0) { %>
+                <p class="text-gray-500 text-sm col-span-full">No hay horarios configurados todavía.</p>
+            <% } else { %>
+                <% horarios.forEach(h => { %>
+                    <div class="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800 flex justify-between items-center hover:border-orange-500/50 transition">
+                        <div>
+                            <span class="text-[10px] text-orange-500 font-bold uppercase block mb-1"><%= h.sucursal_nombre %></span>
+                            <h4 class="font-bold text-white text-lg"><%= h.dia %></h4>
+                            <p class="text-sm text-gray-400">
+                                <i class="fas fa-door-open text-green-500 w-4"></i> <%= h.hora_inicio.substring(0,5) %> hs <br>
+                                <i class="fas fa-door-closed text-red-500 w-4"></i> <%= h.hora_fin.substring(0,5) %> hs
+                            </p>
+                        </div>
+                        <button class="text-gray-600 hover:text-red-500 p-2 transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+
+    </div>
+</body>
+</html>
