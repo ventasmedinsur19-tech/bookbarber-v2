@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda de Turnos | BookBarber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>body { background-color: #0d0d0d; color: #e5e5e5; font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+            <div>
+                <a href="/dashboard" class="text-orange-500 text-xs font-bold uppercase tracking-widest"><i class="fas fa-chevron-left mr-2"></i>Volver</a>
+                <h1 class="text-3xl font-black text-white mt-1">AGENDA DEL DÍA</h1>
+                <p class="text-gray-500 text-xs uppercase font-bold tracking-tighter"><%= new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+            </div>
+
+            <form action="/turnos" method="GET" class="bg-[#1a1a1a] p-1 rounded-xl border border-gray-800">
+                <select name="sucursal_id" onchange="this.form.submit()" class="bg-transparent text-white font-bold text-sm px-4 py-2 outline-none cursor-pointer">
+                    <% sucursales.forEach(s => { %>
+                        <option value="<%= s.id %>" <%= sucursalActual == s.id ? 'selected' : '' %>><%= s.nombre %></option>
+                    <% }) %>
+                </select>
+            </form>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <% barberos.forEach(barbero => { %>
+                <div class="bg-[#141414] border border-gray-800 rounded-2xl overflow-hidden flex flex-col h-fit">
+                    <div class="bg-[#1a1a1a] p-4 border-b border-gray-800">
+                        <h2 class="text-white font-black text-center uppercase tracking-widest text-sm"><%= barbero.nombre %></h2>
+                    </div>
+
+                    <div class="p-3 space-y-3 min-h-[200px]">
+                        <% 
+                            const turnosBarbero = turnos.filter(t => t.barbero_id === barbero.id);
+                            if (turnosBarbero.length === 0) { 
+                        %>
+                            <p class="text-gray-700 text-center text-[10px] mt-10 uppercase font-bold">Sin turnos para hoy</p>
+                        <% } else { %>
+                            <% turnosBarbero.forEach(t => { %>
+                                <div id="turno-<%= t.id %>" class="bg-[#0d0d0d] border border-gray-800 p-4 rounded-xl <%= t.estado !== 'pendiente' ? 'opacity-30 grayscale' : '' %>">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="bg-orange-500 text-black text-[10px] font-black px-2 py-0.5 rounded">
+                                            <%= new Date(t.fecha_hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
+                                        </span>
+                                        <span class="text-[9px] text-gray-500 font-bold uppercase"><%= t.estado %></span>
+                                    </div>
+                                    <h4 class="text-white font-bold text-sm uppercase"><%= t.cliente_nombre %></h4>
+                                    <p class="text-orange-500 text-[10px] font-bold uppercase mt-1"><%= t.servicio_nombre %></p>
+                                    
+                                    <% if (t.estado === 'pendiente') { %>
+                                        <div class="flex gap-2 mt-4 pt-4 border-t border-gray-900">
+                                            <button onclick="actualizarTurno(<%= t.id %>, 'exito')" class="flex-1 bg-green-600 hover:bg-green-500 text-white text-[10px] font-black py-2 rounded-lg transition uppercase">Éxito</button>
+                                            <button onclick="actualizarTurno(<%= t.id %>, 'cancelado')" class="flex-1 bg-red-900/30 hover:bg-red-800 text-red-500 text-[10px] font-black py-2 rounded-lg transition uppercase border border-red-900/50">X</button>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            <% }) %>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <script>
+        async function actualizarTurno(id, estado) {
+            const res = await fetch('/turnos/actualizar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ turno_id: id, estado: estado })
+            });
+            if (res.ok) {
+                location.reload(); // Recargamos para que impacte en la visual y en la caja
+            }
+        }
+    </script>
+</body>
+</html>
