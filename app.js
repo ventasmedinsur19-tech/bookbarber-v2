@@ -1,188 +1,240 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda de Turnos | BookBarber Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        bbDark: '#0a0a0a',
-                        bbCard: '#141414',
-                        bbBorder: '#262626',
-                        bbAccent: '#f97316'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #0a0a0a; color: #e5e5e5; }
-        .glass-card { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid #262626; }
-        select option { background-color: #141414; color: #fff; }
-    </style>
-</head>
-<body class="font-sans antialiased min-h-screen p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
-        
-        <div class="flex items-center gap-4 mb-10 border-b border-bbBorder pb-6">
-            <a href="/dashboard" class="flex items-center justify-center w-10 h-10 rounded-xl bg-bbBorder text-gray-400 hover:text-bbAccent hover:bg-bbAccent/10 transition-all">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <div>
-                <h1 class="text-2xl md:text-3xl font-black text-white">Agenda de Turnos</h1>
-                <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">Administración de citas y reservas diarios</p>
-            </div>
-        </div>
+const express = require('express');
+const mysql = require('mysql2');
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+require('dotenv').config();
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-1">
-                <div class="glass-card p-6 rounded-2xl sticky top-6 shadow-lg">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-8 h-8 rounded-lg bg-bbAccent/10 flex items-center justify-center text-bbAccent">
-                            <i class="fas fa-calendar-plus"></i>
-                        </div>
-                        <h2 class="text-lg font-bold text-white">Agendar Manual</h2>
-                    </div>
+const app = express();
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.set('view engine', 'ejs');
 
-                    <% if (barberos.length === 0 || servicios.length === 0) { %>
-                        <div class="bg-orange-500/10 border border-bbAccent/30 text-bbAccent p-4 rounded-xl text-xs leading-relaxed">
-                            <i class="fas fa-info-circle mr-1"></i> Asegúrate de registrar al menos un <b>Barbero</b> y un <b>Servicio</b> para agendar turnos manualmente.
-                        </div>
-                    <% } else { %>
-                        <form action="/turnos/guardar" method="POST" class="space-y-4">
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Nombre del Cliente</label>
-                                <input type="text" name="cliente_nombre" required placeholder="Ej. Juan Pérez" class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-sm text-white outline-none focus:border-bbAccent transition-all">
-                            </div>
+// Servir archivos estáticos
+app.use(express.static('public'));
 
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">WhatsApp</label>
-                                <input type="tel" name="cliente_whatsapp" required placeholder="Ej. 543513000000" class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-sm text-white outline-none focus:border-bbAccent transition-all">
-                            </div>
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'medinsur_secret_key', 
+  resave: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
+}));
 
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Seleccionar Barbero</label>
-                                <select name="barbero_id" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-sm text-white outline-none focus:border-bbAccent appearance-none">
-                                    <% barberos.forEach(b => { %>
-                                        <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
-                                    <% }) %>
-                                </select>
-                            </div>
+// Pool de conexión Hostinger
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306
+}).promise();
 
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Servicio Requerido</label>
-                                <select name="servicio_id" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-sm text-white outline-none focus:border-bbAccent appearance-none">
-                                    <% servicios.forEach(s => { %>
-                                        <option value="<%= s.id %>"><%= s.nombre %> — $<%= s.precio %></option>
-                                    <% }) %>
-                                </select>
-                            </div>
+// Middleware de Protección
+const isAuth = (req, res, next) => {
+  if (req.session.userId) return next();
+  res.redirect('/login');
+};
 
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Fecha</label>
-                                    <input type="date" name="fecha" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-xs text-white outline-none focus:border-bbAccent" style="color-scheme: dark;">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-wider">Hora</label>
-                                    <input type="time" name="hora" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-3.5 text-xs text-white outline-none focus:border-bbAccent" style="color-scheme: dark;">
-                                </div>
-                            </div>
+// --- RUTAS BÁSICAS ---
+app.get('/', (req, res) => res.redirect('/dashboard'));
+app.get('/login', (req, res) => res.render('login', { error: null }));
+app.get('/registro', (req, res) => res.render('registro'));
+app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-                            <button type="submit" class="w-full bg-bbAccent text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-orange-600 transition-all shadow-[0_0_20px_rgba(249,115,22,0.15)] mt-2">
-                                Confirmar Turno
-                            </button>
-                        </form>
-                    <% } %>
-                </div>
-            </div>
+// --- DASHBOARD ---
+app.get('/dashboard', isAuth, async (req, res) => {
+  try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    
+    const fechaReg = new Date(user[0].fecha_registro);
+    const diasTranscurridos = Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24));
+    const diasRestantes = Math.max(0, 30 - diasTranscurridos);
+    
+    const baseSuscripcion = 15000;
+    const extras = Math.max(0, sucursales.length - 1) * 5000;
+    const totalMensual = baseSuscripcion + extras;
 
-            <div class="lg:col-span-2">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-white">Próximas Citas</h3>
-                    <span class="bg-bbBorder text-gray-400 px-3 py-1 rounded-full text-xs font-bold"><%= turnos.length %> Totales</span>
-                </div>
+    res.render('dashboard', { 
+      user: user[0], 
+      sucursales, 
+      diasRestantes,
+      totalMensual
+    });
+  } catch (e) { res.status(500).send("Error en dashboard: " + e.message); }
+});
 
-                <div class="space-y-4">
-                    <% if (turnos.length === 0) { %>
-                        <div class="glass-card p-12 flex flex-col items-center justify-center text-center rounded-2xl border-dashed border-2 border-bbBorder">
-                            <i class="fas fa-calendar-check text-4xl text-gray-600 mb-4"></i>
-                            <p class="text-gray-400 text-sm">No hay turnos agendados en el sistema.</p>
-                            <p class="text-xs text-gray-600 mt-1">Los turnos tomados de forma manual o pública aparecerán listados aquí.</p>
-                        </div>
-                    <% } else { %>
-                        <% turnos.forEach(t => { %>
-                            <div class="glass-card p-5 rounded-2xl border-l-4 transition-all duration-300 
-                                <%= t.estado === 'completado' ? 'border-green-500 bg-green-500/5' : t.estado === 'cancelado' ? 'border-red-500 bg-red-500/5' : 'border-bbAccent bg-bbCard/50' %>">
-                                
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    
-                                    <div class="space-y-2">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="text-sm font-black text-white"><%= t.cliente_nombre %></span>
-                                            <a href="https://wa.me/<%= t.cliente_whatsapp %>" target="_blank" class="text-xs text-green-500 hover:underline flex items-center gap-1">
-                                                <i class="fab fa-whatsapp"></i> <%= t.cliente_whatsapp %>
-                                            </a>
-                                        </div>
+// --- GESTIÓN DE SUCURSALES ---
+app.get('/sucursales', isAuth, async (req, res) => {
+  try {
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    res.render('sucursales_gestion', { sucursales });
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-                                        <div class="grid grid-cols-2 sm:flex sm:items-center gap-x-4 gap-y-1 text-xs text-gray-400">
-                                            <div><i class="fas fa-cut text-bbAccent mr-1"></i> <%= t.servicio_nombre %></div>
-                                            <div class="font-bold text-white">$<%= t.precio.toLocaleString('es-AR') %></div>
-                                            <div class="sm:border-l sm:border-bbBorder sm:pl-4"><i class="fas fa-user text-gray-500 mr-1"></i> <%= t.barbero_nombre %></div>
-                                            <div class="text-[10px] uppercase text-gray-500 font-semibold">(<%= t.sucursal_nombre %>)</div>
-                                        </div>
+app.post('/sucursales/guardar', isAuth, async (req, res) => {
+  try {
+    const { nombre, direccion, logo_url, foto_url } = req.body;
+    await db.query('INSERT INTO sucursales (usuario_id, nombre, direccion, logo_url, foto_url) VALUES (?, ?, ?, ?, ?)', 
+    [req.session.userId, nombre, direccion, logo_url, foto_url]);
+    res.redirect('/sucursales');
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-                                        <div class="flex items-center gap-4 text-xs font-semibold pt-1">
-                                            <span class="text-bbAccent"><i class="far fa-calendar mr-1"></i> <%= new Date(t.fecha).toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit'}) %></span>
-                                            <span class="text-white bg-bbBorder px-2 py-0.5 rounded"><i class="far fa-clock mr-1"></i> <%= t.hora.substring(0,5) %> hs</span>
-                                        </div>
-                                    </div>
+// --- GESTIÓN DE STAFF ---
+app.get('/staff', isAuth, async (req, res) => {
+  try {
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    const [barberos] = await db.query('SELECT b.*, s.nombre as sucursal_nombre FROM barberos b JOIN sucursales s ON b.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
+    res.render('staff', { sucursales, barberos });
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-                                    <div class="flex items-center gap-2 self-end sm:self-center">
-                                        <% if (t.estado === 'pendiente') { %>
-                                            <form action="/turnos/estado" method="POST">
-                                                <input type="hidden" name="turno_id" value="<%= t.id %>">
-                                                <input type="hidden" name="nuevo_estado" value="completado">
-                                                <button type="submit" class="bg-green-500 hover:bg-green-600 text-black px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all">
-                                                    <i class="fas fa-check"></i> Listo
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="/turnos/estado" method="POST">
-                                                <input type="hidden" name="turno_id" value="<%= t.id %>">
-                                                <input type="hidden" name="nuevo_estado" value="cancelado">
-                                                <button type="submit" class="bg-bbBorder hover:bg-red-950 text-red-500 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all">
-                                                    Cancelar
-                                                </button>
-                                            </form>
-                                        <% } else if (t.estado === 'completado') { %>
-                                            <span class="bg-green-500/10 text-green-500 border border-green-500/20 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest">
-                                                <i class="fas fa-check-circle mr-1"></i> Completado
-                                            </span>
-                                        <% } else { %>
-                                            <span class="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest">
-                                                <i class="fas fa-times-circle mr-1"></i> Cancelado
-                                            </span>
-                                        <% } %>
-                                    </div>
+app.post('/staff/guardar', isAuth, async (req, res) => {
+  try {
+    const { sucursal_id, nombre, foto_url } = req.body;
+    await db.query('INSERT INTO barberos (sucursal_id, nombre, foto_url) VALUES (?, ?, ?)', [sucursal_id, nombre, foto_url]);
+    res.redirect('/staff');
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-                                </div>
-                            </div>
-                        <% }) %>
-                    <% } %>
-                </div>
-            </div>
+// --- GESTIÓN DE SERVICIOS ---
+app.get('/servicios', isAuth, async (req, res) => {
+  try {
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    const [servicios] = await db.query(`
+      SELECT ser.*, s.nombre as sucursal_nombre 
+      FROM servicios ser 
+      JOIN sucursales s ON ser.sucursal_id = s.id 
+      WHERE s.usuario_id = ?`, [req.session.userId]);
+    res.render('servicios_gestion', { sucursales, servicios }); 
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-        </div>
+app.post('/servicios/guardar', isAuth, async (req, res) => {
+  try {
+    const { sucursal_id, nombre, precio, duracion } = req.body;
+    await db.query('INSERT INTO servicios (sucursal_id, nombre, precio, duracion) VALUES (?, ?, ?, ?)', [sucursal_id, nombre, precio, duracion]);
+    res.redirect('/servicios');
+  } catch (e) { res.status(500).send(e.message); }
+});
 
-    </div>
-</body>
-</html>
+// --- GESTIÓN DE HORARIOS ---
+app.get('/horarios', isAuth, async (req, res) => {
+  try {
+    const [barberos] = await db.query(`
+      SELECT b.id, b.nombre, s.nombre as sucursal_nombre 
+      FROM barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE s.usuario_id = ?`, [req.session.userId]);
+
+    const [horarios] = await db.query(`
+      SELECT h.*, b.nombre as barbero_nombre, s.nombre as sucursal_nombre 
+      FROM horarios h 
+      JOIN barberos b ON h.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE s.usuario_id = ?
+      ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'), h.hora_inicio`, 
+      [req.session.userId]);
+
+    res.render('horarios', { barberos, horarios });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/horarios/guardar', isAuth, async (req, res) => {
+  try {
+    const { barbero_id, dia, hora_inicio, hora_fin } = req.body;
+    await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
+    [barbero_id, dia, hora_inicio, hora_fin]);
+    res.redirect('/horarios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- GESTIÓN DE TURNOS ---
+app.get('/turnos', isAuth, async (req, res) => {
+  try {
+    const [barberos] = await db.query(`
+      SELECT b.id, b.nombre, s.nombre as sucursal_nombre 
+      FROM barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE s.usuario_id = ?`, [req.session.userId]);
+
+    const [servicios] = await db.query(`
+      SELECT ser.id, ser.nombre, ser.precio, s.nombre as sucursal_nombre 
+      FROM servicios ser 
+      JOIN sucursales s ON ser.sucursal_id = s.id 
+      WHERE s.usuario_id = ?`, [req.session.userId]);
+
+    const [turnos] = await db.query(`
+      SELECT t.*, b.nombre as barbero_nombre, ser.nombre as servicio_nombre, ser.precio, s.nombre as sucursal_nombre 
+      FROM turnos t
+      JOIN barberos b ON t.barbero_id = b.id
+      JOIN servicios ser ON t.servicio_id = ser.id
+      JOIN sucursales s ON b.sucursal_id = s.id
+      WHERE s.usuario_id = ?
+      ORDER BY t.fecha ASC, t.hora ASC`, [req.session.userId]);
+
+    res.render('turnos', { barberos, servicios, turnos });
+  } catch (e) { res.status(500).send("Error al cargar turnos: " + e.message); }
+});
+
+app.post('/turnos/guardar', isAuth, async (req, res) => {
+  try {
+    const { barbero_id, servicio_id, cliente_nombre, cliente_whatsapp, fecha, hora } = req.body;
+    await db.query(`
+      INSERT INTO turnos (barbero_id, servicio_id, cliente_nombre, cliente_whatsapp, fecha, hora, estado) 
+      VALUES (?, ?, ?, ?, ?, ?, 'pendiente')`, 
+      [barbero_id, servicio_id, cliente_nombre, cliente_whatsapp, fecha, hora]);
+    res.redirect('/turnos');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/turnos/estado', isAuth, async (req, res) => {
+  try {
+    const { turno_id, nuevo_estado } = req.body;
+    await db.query('UPDATE turnos SET estado = ? WHERE id = ?', [nuevo_estado, turno_id]);
+    res.redirect('/turnos');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- SECCIÓN CAJA (PROVISIONAL) ---
+app.get('/caja', isAuth, (req, res) => res.render('caja'));
+
+// --- RUTA PÚBLICA DE RESERVA ---
+app.get('/b/:id', async (req, res) => {
+  try {
+    const sucursalId = req.params.id;
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE id = ?', [sucursalId]);
+    if(sucursales.length === 0) return res.status(404).send('Barbería no encontrada');
+    
+    const [barberos] = await db.query('SELECT * FROM barberos WHERE sucursal_id = ?', [sucursalId]);
+    const [servicios] = await db.query('SELECT * FROM servicios WHERE sucursal_id = ?', [sucursalId]);
+    
+    res.render('reserva_publica', { sucursal: sucursales[0], barberos, servicios });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- AUTH POST ---
+app.post('/auth/registro', async (req, res) => {
+  try {
+    const { whatsapp, password, nombre_barberia } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    const [u] = await db.query('INSERT INTO usuarios (whatsapp, password) VALUES (?, ?)', [whatsapp, hash]);
+    await db.query('INSERT INTO sucursales (usuario_id, nombre) VALUES (?, ?)', [u.insertId, nombre_barberia]);
+    req.session.userId = u.insertId;
+    res.redirect('/dashboard');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { whatsapp, password } = req.body;
+    const [u] = await db.query('SELECT * FROM usuarios WHERE whatsapp = ?', [whatsapp]);
+    if (u.length > 0 && await bcrypt.compare(password, u[0].password)) {
+      req.session.userId = u[0].id;
+      return res.redirect('/dashboard');
+    }
+    res.render('login', { error: 'WhatsApp o contraseña incorrectos.' });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.listen(process.env.PORT || 3000, () => console.log("Servidor BookBarber Activo"));
