@@ -84,7 +84,7 @@ app.post('/sucursales/eliminar/:id', isAuth, async (req, res) => {
   try {
     await db.query('DELETE FROM sucursales WHERE id = ? AND usuario_id = ?', [req.params.id, req.session.userId]);
     res.redirect('/sucursales');
-  } catch (e) { res.status(500).send("Error al eliminar sucursal: " + e.message); }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 // --- GESTIÓN DE STAFF ---
@@ -111,7 +111,7 @@ app.post('/staff/eliminar/:id', isAuth, async (req, res) => {
       JOIN sucursales s ON b.sucursal_id = s.id 
       WHERE b.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/staff');
-  } catch (e) { res.status(500).send("Error al eliminar barbero: " + e.message); }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 // --- GESTIÓN DE SERVICIOS ---
@@ -142,7 +142,7 @@ app.post('/servicios/eliminar/:id', isAuth, async (req, res) => {
       JOIN sucursales s ON ser.sucursal_id = s.id 
       WHERE ser.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/servicios');
-  } catch (e) { res.status(500).send("Error al eliminar servicio: " + e.message); }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 // --- GESTIÓN DE HORARIOS ---
@@ -184,7 +184,7 @@ app.post('/horarios/eliminar/:id', isAuth, async (req, res) => {
       JOIN sucursales s ON b.sucursal_id = s.id 
       WHERE h.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/horarios');
-  } catch (e) { res.status(500).send("Error al eliminar horario: " + e.message); }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 // --- GESTIÓN DE TURNOS ---
@@ -242,7 +242,7 @@ app.post('/turnos/eliminar/:id', isAuth, async (req, res) => {
       JOIN sucursales s ON b.sucursal_id = s.id
       WHERE t.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/turnos');
-  } catch (e) { res.status(500).send("Error al eliminar turno: " + e.message); }
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 // --- SECCIÓN CAJA Y RANKING REAL ---
