@@ -19,7 +19,7 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
 }));
 
-// Pool de conexión usando tus variables de Hostinger
+// Pool de conexión Hostinger
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -40,15 +40,28 @@ app.get('/login', (req, res) => res.render('login', { error: null }));
 app.get('/registro', (req, res) => res.render('registro'));
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// --- DASHBOARD ---
+// --- DASHBOARD (MEJORADO CON PRECIOS) ---
 app.get('/dashboard', isAuth, async (req, res) => {
   try {
     const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    
+    // Cálculos de Suscripción (BookBarber Business Logic)
     const fechaReg = new Date(user[0].fecha_registro);
-    const diasRestantes = Math.max(0, 30 - Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24)));
-    res.render('dashboard', { user: user[0], sucursales, diasRestantes });
-  } catch (e) { res.status(500).send(e.message); }
+    const diasTranscurridos = Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24));
+    const diasRestantes = Math.max(0, 30 - diasTranscurridos);
+    
+    const baseSuscripcion = 15000;
+    const extras = Math.max(0, sucursales.length - 1) * 5000;
+    const totalMensual = baseSuscripcion + extras;
+
+    res.render('dashboard', { 
+      user: user[0], 
+      sucursales, 
+      diasRestantes,
+      totalMensual
+    });
+  } catch (e) { res.status(500).send("Error en dashboard: " + e.message); }
 });
 
 // --- GESTIÓN DE SUCURSALES ---
@@ -96,33 +109,64 @@ app.post('/servicios/guardar', isAuth, async (req, res) => {
   res.redirect('/servicios');
 });
 
-// --- GESTIÓN DE HORARIOS ---
+// --- GESTIÓN DE HORARIOS (CORREGIDO PARA USAR BARBERO_ID) ---
 app.get('/horarios', isAuth, async (req, res) => {
   try {
-    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    // Traemos barberos en lugar de sucursales para el formulario desplegable
+    const [barberos] = await db.query(`
+      SELECT b.id, b.nombre, s.nombre as sucursal_nombre 
+      FROM barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE s.usuario_id = ?`, [req.session.userId]);
+
     const [horarios] = await db.query(`
-      SELECT h.*, s.nombre as sucursal_nombre 
+      SELECT h.*, b.nombre as barbero_nombre, s.nombre as sucursal_nombre 
       FROM horarios h 
-      JOIN sucursales s ON h.sucursal_id = s.id 
+      JOIN barberos b ON h.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id 
       WHERE s.usuario_id = ?
       ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'), h.hora_inicio`, 
       [req.session.userId]);
-    res.render('horarios', { sucursales, horarios });
+
+    res.render('horarios', { barberos, horarios });
   } catch (e) { res.status(500).send(e.message); }
 });
 
 app.post('/horarios/guardar', isAuth, async (req, res) => {
   try {
-    const { sucursal_id, dia, hora_inicio, hora_fin } = req.body;
-    await db.query('INSERT INTO horarios (sucursal_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
-    [sucursal_id, dia, hora_inicio, hora_fin]);
+    const { barbero_id, dia, hora_inicio, hora_fin } = req.body;
+    await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
+    [barbero_id, dia, hora_inicio, hora_fin]);
     res.redirect('/horarios');
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- TURNOS Y CAJA (RUTAS LISTAS) ---
+// --- TURNOS Y CAJA ---
 app.get('/turnos', isAuth, (req, res) => res.render('turnos'));
 app.get('/caja', isAuth, (req, res) => res.render('caja'));
+
+// ==========================================
+// RUTA PÚBLICA (LO QUE VE EL CLIENTE)
+// ==========================================
+app.get('/b/:id', async (req, res) => {
+  try {
+    const sucursalId = req.params.id;
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE id = ?', [sucursalId]);
+    
+    if(sucursales.length === 0) return res.status(404).send('Barbería no encontrada');
+    
+    const [barberos] = await db.query('SELECT * FROM barberos WHERE sucursal_id = ?', [sucursalId]);
+    const [servicios] = await db.query('SELECT * FROM servicios WHERE sucursal_id = ?', [sucursalId]);
+    
+    // Renderizamos la vista pública (que crearemos pronto)
+    res.render('reserva_publica', { 
+      sucursal: sucursales[0], 
+      barberos, 
+      servicios 
+    });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
 
 // --- AUTH (REGISTRO Y LOGIN) ---
 app.post('/auth/registro', async (req, res) => {
