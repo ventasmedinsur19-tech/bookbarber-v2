@@ -80,6 +80,13 @@ app.post('/sucursales/guardar', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
+app.post('/sucursales/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query('DELETE FROM sucursales WHERE id = ? AND usuario_id = ?', [req.params.id, req.session.userId]);
+    res.redirect('/sucursales');
+  } catch (e) { res.status(500).send("Error al eliminar sucursal: " + e.message); }
+});
+
 // --- GESTIÓN DE STAFF ---
 app.get('/staff', isAuth, async (req, res) => {
   try {
@@ -95,6 +102,16 @@ app.post('/staff/guardar', isAuth, async (req, res) => {
     await db.query('INSERT INTO barberos (sucursal_id, nombre, foto_url) VALUES (?, ?, ?)', [sucursal_id, nombre, foto_url]);
     res.redirect('/staff');
   } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/staff/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE b FROM barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE b.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
+    res.redirect('/staff');
+  } catch (e) { res.status(500).send("Error al eliminar barbero: " + e.message); }
 });
 
 // --- GESTIÓN DE SERVICIOS ---
@@ -116,6 +133,16 @@ app.post('/servicios/guardar', isAuth, async (req, res) => {
     await db.query('INSERT INTO servicios (sucursal_id, nombre, precio, duracion) VALUES (?, ?, ?, ?)', [sucursal_id, nombre, precio, duracion]);
     res.redirect('/servicios');
   } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/servicios/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE ser FROM servicios ser 
+      JOIN sucursales s ON ser.sucursal_id = s.id 
+      WHERE ser.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
+    res.redirect('/servicios');
+  } catch (e) { res.status(500).send("Error al eliminar servicio: " + e.message); }
 });
 
 // --- GESTIÓN DE HORARIOS ---
@@ -147,6 +174,17 @@ app.post('/horarios/guardar', isAuth, async (req, res) => {
     [barbero_id, dia, hora_inicio, hora_fin]);
     res.redirect('/horarios');
   } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/horarios/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE h FROM horarios h 
+      JOIN barberos b ON h.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE h.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
+    res.redirect('/horarios');
+  } catch (e) { res.status(500).send("Error al eliminar horario: " + e.message); }
 });
 
 // --- GESTIÓN DE TURNOS ---
@@ -194,6 +232,17 @@ app.post('/turnos/estado', isAuth, async (req, res) => {
     await db.query('UPDATE turnos SET estado = ? WHERE id = ?', [nuevo_estado, turno_id]);
     res.redirect('/turnos');
   } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/turnos/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE t FROM turnos t
+      JOIN barberos b ON t.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id
+      WHERE t.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
+    res.redirect('/turnos');
+  } catch (e) { res.status(500).send("Error al eliminar turno: " + e.message); }
 });
 
 // --- SECCIÓN CAJA Y RANKING REAL ---
