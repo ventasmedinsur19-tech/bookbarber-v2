@@ -3,158 +3,342 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Turnos - BookBarber</title>
-  <link rel="stylesheet" href="/css/styles.css"> <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    header h1 { color: #2c3e50; margin: 0; }
-    .btn-back { background-color: #7f8c8d; color: white; text-decoration: none; padding: 10px 15px; border-radius: 5px; font-size: 0.9em; }
-    .grid-turnos { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    @media (min-width: 768px) { .grid-turnos { grid-template-columns: 1fr 2fr; } }
-    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .card h2 { margin-top: 0; color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; }
-    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    .btn-submit { background-color: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; font-size: 1em; cursor: pointer; font-weight: bold; }
-    .btn-submit:hover { background-color: #219150; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    th { background-color: #2c3e50; color: white; }
-    .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
-    .badge-pendiente { background-color: #f1c40f; color: #fff; }
-    .badge-completado { background-color: #27ae60; color: #fff; }
-    .badge-cancelado { background-color: #e74c3c; color: #fff; }
-    .actions-form { display: inline-block; margin-right: 5px; }
-    .btn-action { border: none; padding: 6px 10px; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
-    .btn-check { background-color: #2ecc71; }
-    .btn-cancel { background-color: #e74c3c; }
-    .btn-action:hover { opacity: 0.9; }
-    .wa-link { color: #25d366; text-decoration: none; font-weight: bold; }
+  <title>Control de Turnos - BookBarber</title>
+  <style>
+    /* Estilos base alineados al Panel V2 */
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 15px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #2d2d2d;
+      padding-bottom: 15px;
+    }
+    header h1 { font-size: 1.5rem; color: #ffffff; margin: 0; }
+    .btn-back {
+      background-color: #262626;
+      color: #ff7a00;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border: 1px solid #ff7a00;
+      transition: 0.2s;
+    }
+
+    /* Switcher de Tiempo (Hoy vs Futuros) */
+    .time-switcher {
+      display: flex;
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #a0a0a0;
+      padding: 12px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: #ff7a00;
+      color: #ffffff;
+    }
+
+    /* Contenedores de Bloques de Barberías y Barberos */
+    .section-barberia {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-left: 4px solid #ff7a00;
+    }
+    .section-barberia h2 {
+      margin: 0 0 15px 0;
+      font-size: 1.2rem;
+      color: #ffffff;
+    }
+
+    .barbero-group {
+      background: #222222;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+    .barbero-header {
+      font-weight: bold;
+      color: #ff7a00;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Tarjetas de Turnos (Sin tablas, ideal para celular) */
+    .turno-card {
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid #3d3d3d;
+    }
+    .turno-main-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .turno-hora {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffffff;
+      background: #3a3a3a;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .turno-fecha-futura {
+      font-size: 0.8rem;
+      color: #ff7a00;
+      margin-top: 2px;
+    }
+    .cliente-name {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 1rem;
+    }
+    .servicio-tag {
+      font-size: 0.9rem;
+      color: #cccccc;
+    }
+    .price-tag {
+      color: #2ecc71;
+      font-weight: bold;
+    }
+
+    /* Enlace Whatsapp */
+    .wa-container { margin-top: 2px; }
+    .wa-link {
+      color: #25d366;
+      text-decoration: none;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Acciones de Estado de Turno */
+    .turno-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid #3d3d3d;
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+    .btn-action {
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .btn-success { background: #27ae60; color: white; }
+    .btn-cancel { background: #c0392b; color: white; }
+    
+    .status-finalizado {
+      font-size: 0.85rem;
+      color: #777777;
+      font-style: italic;
+    }
+
+    /* Clases útiles para el filtrado dinámico */
+    .hidden { display: none !important; }
+    .no-turnos-msg {
+      text-align: center;
+      color: #777777;
+      padding: 20px;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <header>
-    <h1>📅 Panel de Turnos</h1>
-    <a href="/dashboard" class="btn-back">← Volver al Dashboard</a>
+    <h1>📅 Gestión de Turnos</h1>
+    <a href="/dashboard" class="btn-back">← Dashboard</a>
   </header>
 
-  <div class="grid-turnos">
+  <div class="time-switcher">
+    <button class="tab-btn active" onclick="switchView('hoy')">Turnos de Hoy</button>
+    <button class="tab-btn" onclick="switchView('futuros')">Turnos Futuros</button>
+  </div>
+
+  <% 
+    // Lógica EJS para agrupar los datos que vienen sueltos del backend
+    // Agrupamos dinámicamente por Barbería y luego por Barbero
+    let estructura = {};
     
-    <div class="card">
-      <h2>Nuevo Turno</h2>
-      <form action="/turnos/guardar" method="POST">
-        
-        <div class="form-group">
-          <label for="barbero_id">Asignar Barbero:</label>
-          <select name="barbero_id" id="barbero_id" required>
-            <option value="">-- Seleccionar Profesional --</option>
-            <% barberos.forEach(b => { %>
-              <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
-            <% }) %>
-          </select>
-        </div>
+    // Conseguir fecha de hoy en formato local YYYY-MM-DD sin desfase
+    let hoyStr = new Date().toISOString().split('T')[0];
 
-        <div class="form-group">
-          <label for="servicio_id">Servicio requerido:</label>
-          <select name="servicio_id" id="servicio_id" required>
-            <option value="">-- Seleccionar Servicio --</option>
-            <% servicios.forEach(s => { %>
-              <option value="<%= s.id %>"><%= s.nombre %> — $<%= s.precio %> (<%= s.sucursal_nombre %>)</option>
-            <% }) %>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="cliente_nombre">Nombre del Cliente:</label>
-          <input type="text" name="cliente_nombre" id="cliente_nombre" placeholder="Ej: Carlos Gómez" required>
-        </div>
-
-        <div class="form-group">
-          <label for="cliente_whatsapp">WhatsApp del Cliente:</label>
-          <input type="tel" name="cliente_whatsapp" id="cliente_whatsapp" placeholder="Ej: 54911xxxxxxx" required>
-        </div>
-
-        <div class="form-group">
-          <label for="fecha">Fecha del Turno:</label>
-          <input type="date" name="fecha" id="fecha" required>
-        </div>
-
-        <div class="form-group">
-          <label for="hora">Hora:</label>
-          <input type="time" name="hora" id="hora" required>
-        </div>
-
-        <button type="submit" class="btn-submit">Agendar Turno</button>
-      </form>
-    </div>
-
-    <div class="card">
-      <h2>Lista de Turnos</h2>
+    turnos.forEach(t => {
+      let bNombre = t.sucursal_nombre || "Barbería General";
+      let barbNombre = t.barbero_nombre || "Sin Asignar";
       
-      <% if (turnos.length === 0) { %>
-        <p style="color: #7f8c8d; text-align: center; padding: 20px;">No hay turnos registrados en este momento.</p>
-      <% } else { %>
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Horario</th>
-                <th>Cliente</th>
-                <th>Detalles</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% turnos.forEach(t => { %>
-                <tr>
-                  <td>
-                    <strong><%= new Date(t.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) %></strong><br>
-                    <small style="color: #555;"><%= t.hora.substring(0, 5) %> hs</small>
-                  </td>
-                  <td>
-                    <strong><%= t.cliente_nombre %></strong><br>
-                    <a href="https://wa.me/<%= t.cliente_whatsapp %>" target="_blank" class="wa-link">💬 WhatsApp</a>
-                  </td>
-                  <td>
-                    <span style="font-size: 0.95em;"><%= t.servicio_nombre %></span><br>
-                    <small style="color: #7f8c8d;"><%= t.barbero_nombre %> • <strong>$<%= t.precio %></strong></small><br>
-                    <small style="font-style: italic; color: #95a5a6;"><%= t.sucursal_nombre %></small>
-                  </td>
-                  <td>
-                    <span class="badge badge-<%= t.estado %>"><%= t.estado %></span>
-                  </td>
-                  <td>
-                    <% if (t.estado === 'pendiente') { %>
-                      <form action="/turnos/estado" method="POST" class="actions-form">
-                        <input type="hidden" name="turno_id" value="<%= t.id %>">
-                        <input type="hidden" name="nuevo_estado" value="completado">
-                        <button type="submit" class="btn-action btn-check" title="Marcar como Completado">✓</button>
-                      </form>
-                      
-                      <form action="/turnos/estado" method="POST" class="actions-form">
-                        <input type="hidden" name="turno_id" value="<%= t.id %>">
-                        <input type="hidden" name="nuevo_estado" value="cancelado">
-                        <button type="submit" class="btn-action btn-cancel" title="Cancelar Turno">✕</button>
-                      </form>
-                    <% } else { %>
-                      <small style="color: #bdc3c7;">Finalizado</small>
-                    <% } %>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      <% } %>
+      // Determinar si es hoy o futuro
+      let tFechaStr = new Date(t.fecha).toISOString().split('T')[0];
+      let esHoy = (tFechaStr === hoyStr);
 
-    </div>
+      if (!estructura[bNombre]) estructura[bNombre] = {};
+      if (!estructura[bNombre][barbNombre]) estructura[bNombre][barbNombre] = [];
+      
+      // Guardamos la info extendida
+      estructura[bNombre][barbNombre].push({
+        id: t.id,
+        cliente_nombre: t.cliente_nombre,
+        cliente_whatsapp: t.cliente_whatsapp,
+        servicio_nombre: t.servicio_nombre,
+        precio: t.precio,
+        hora: t.hora.substring(0, 5),
+        fechaFormateada: new Date(t.fecha).toLocaleDateString('es-ES', {timeZone: 'UTC'}),
+        estado: t.estado,
+        esHoy: esHoy
+      });
+    });
+  %>
+
+  <div id="turnos-contenedor">
+    <% if (Object.keys(estructura).length === 0) { %>
+      <div class="no-turnos-msg">No hay turnos registrados en el sistema.</div>
+    <% } else { %>
+      
+      <% Object.keys(estructura).forEach(barberia => { %>
+        <div class="section-barberia" data-barberia="<%= barberia %>">
+          <h2>🏢 <%= barberia %></h2>
+
+          <% Object.keys(estructura[barberia]).forEach(barbero => { %>
+            <div class="barbero-group" data-barbero="<%= barbero %>">
+              <div class="barbero-header">💈 Barbero: <%= barbero %></div>
+              
+              <div class="cards-lista">
+                <% estructura[barberia][barbero].forEach(turno => { %>
+                  
+                  <div class="turno-card <%= turno.esHoy ? 'view-hoy' : 'view-futuros hidden' %>" data-estado="<%= turno.estado %>">
+                    <div class="turno-main-info">
+                      <div>
+                        <div class="cliente-name"><%= turno.cliente_nombre %></div>
+                        <div class="wa-container">
+                          <a href="https://wa.me/<%= turno.cliente_whatsapp %>" target="_blank" class="wa-link">
+                            💬 WhatsApp
+                          </a>
+                        </div>
+                      </div>
+                      <div style="text-align: right;">
+                        <div class="turno-hora"><%= turno.hora %> hs</div>
+                        <% if (!turno.esHoy) { %>
+                          <div class="turno-fecha-futura">📅 <%= turno.fechaFormateada %></div>
+                        <% } %>
+                      </div>
+                    </div>
+
+                    <div class="servicio-tag">
+                      ✂️ <%= turno.servicio_nombre %> — <span class="price-tag">$<%= turno.precio %></span>
+                    </div>
+
+                    <div class="turno-footer">
+                      <% if (turno.estado === 'pendiente') { %>
+                        <form action="/turnos/estado" method="POST" style="margin:0;">
+                          <input type="hidden" name="turno_id" value="<%= turno.id %>">
+                          <input type="hidden" name="nuevo_estado" value="completado">
+                          <button type="submit" class="btn-action btn-success">Éxito ✓</button>
+                        </form>
+                        <form action="/turnos/estado" method="POST" style="margin:0;">
+                          <input type="hidden" name="turno_id" value="<%= turno.id %>">
+                          <input type="hidden" name="nuevo_estado" value="cancelado">
+                          <button type="submit" class="btn-action btn-cancel">Cancelar ✕</button>
+                        </form>
+                      <% } else { %>
+                        <span class="status-finalizado">Estado: <%= turno.estado.toUpperCase() %></span>
+                      <% } %>
+                    </div>
+                  </div>
+
+                <% }) %>
+              </div>
+            </div>
+          <% }) %>
+
+        </div>
+      <% }) %>
+
+    <% } %>
   </div>
 </div>
+
+<script>
+  // Script frontal ultra-liviano para cambiar entre Hoy y Futuros al vuelo
+  function switchView(tipo) {
+    // Alternar botones activos
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (tipo === 'hoy') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.querySelectorAll('.view-hoy').forEach(el => el.classList.remove('hidden'));
+      document.querySelectorAll('.view-futuros').forEach(el => el.classList.add('hidden'));
+    } else {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.querySelectorAll('.view-hoy').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.view-futuros').forEach(el => el.classList.remove('hidden'));
+    }
+    chequearBloquesVacios();
+  }
+
+  // Oculta visualmente los títulos de barberos o barberías si no tienen turnos en el segmento elegido
+  function chequearBloquesVacios() {
+    document.querySelectorAll('.barbero-group').forEach(grupo => {
+      const visibles = grupo.querySelectorAll('.turno-card:not(.hidden)').length;
+      if (visibles === 0) {
+        grupo.classList.add('hidden');
+      } else {
+        grupo.classList.remove('hidden');
+      }
+    });
+
+    document.querySelectorAll('.section-barberia').forEach(barberia => {
+      const visibles = barberia.querySelectorAll('.barbero-group:not(.hidden)').length;
+      if (visibles === 0) {
+        barberia.classList.add('hidden');
+      } else {
+        barberia.classList.remove('hidden');
+      }
+    });
+  }
+
+  // Ejecución inicial para limpiar la UI al cargar
+  window.addEventListener('DOMContentLoaded', () => {
+    switchView('hoy');
+  });
+</script>
 
 </body>
 </html>
