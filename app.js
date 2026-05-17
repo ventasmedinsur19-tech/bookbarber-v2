@@ -196,8 +196,35 @@ app.post('/turnos/estado', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- SECCIÓN CAJA (PROVISIONAL) ---
-app.get('/caja', isAuth, (req, res) => res.render('caja'));
+// --- SECCIÓN CAJA Y RANKING REAL ---
+app.get('/caja-ranking', isAuth, async (req, res) => {
+  try {
+    // Traemos solo los turnos exitosos vinculados al usuario logueado
+    const [resultados] = await db.query(`
+      SELECT 
+        suc.nombre AS sucursal_nombre,
+        b.nombre AS barbero_nombre,
+        t.fecha,
+        ser.precio
+      FROM turnos t
+      JOIN barberos b ON t.barbero_id = b.id
+      JOIN sucursales suc ON b.sucursal_id = suc.id
+      JOIN servicios ser ON t.servicio_id = ser.id
+      WHERE t.estado = 'completado' AND suc.usuario_id = ?
+      ORDER BY t.fecha DESC`, [req.session.userId]);
+
+    // Extraemos las sucursales del usuario de forma única para cargar el selector
+    const sucursales = [...new Set(resultados.map(r => r.sucursal_nombre))];
+    
+    // Si la base está vacía o el array de sucursales da vacío, le mandamos una estructura segura para que no rompa el .ejs
+    res.render('caja_ranking', { 
+      turnosFacturados: resultados,
+      sucursales: sucursales
+    });
+  } catch (e) { 
+    res.status(500).send("Error en Caja y Ranking: " + e.message); 
+  }
+});
 
 // --- RUTA PÚBLICA DE RESERVA ---
 app.get('/b/:id', async (req, res) => {
