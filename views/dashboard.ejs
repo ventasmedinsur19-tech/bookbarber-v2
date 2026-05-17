@@ -3,100 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedinSur Dev | BookBarber Online</title>
+    <title>Dashboard | BookBarber Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        bbDark: '#0a0a0a',
+                        bbCard: '#141414',
+                        bbBorder: '#262626',
+                        bbAccent: '#f97316' // Orange-500
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #0f0f0f; color: #f0f0f0; }
-        .sidebar { background-color: #1a1a1a; }
-        .nav-link:hover { background-color: #2a2a2a; border-left: 4px solid #f97316; }
-        .card { background-color: #1a1a1a; border: 1px solid #333; }
+        body { background-color: #0a0a0a; color: #e5e5e5; }
+        /* Transiciones suaves para los enlaces del menú */
+        .nav-item { transition: all 0.2s ease-in-out; }
+        .nav-item:hover { background-color: rgba(249, 115, 22, 0.1); color: #f97316; }
+        /* Efecto glassmorphism sutil para las tarjetas */
+        .glass-card { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid #262626; }
     </style>
 </head>
-<body class="flex flex-col md:flex-row min-h-screen">
+<body class="flex flex-col md:flex-row min-h-screen font-sans antialiased selection:bg-bbAccent selection:text-white">
 
-    <!-- Menú Lateral -->
-    <nav class="sidebar w-full md:w-64 flex-shrink-0 border-r border-gray-800">
-        <div class="p-6 text-center border-b border-gray-800">
-            <h2 class="text-orange-500 font-bold text-xl">BookBarber <span class="text-white">Online</span></h2>
-            <p class="text-[10px] text-gray-500 mt-1">v2.0 | MedinSur Dev</p>
-        </div>
-        
-        <div class="mt-4 flex flex-col">
-            <a href="/dashboard" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-home w-5"></i> Inicio</a>
-            <a href="/sucursales" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-store w-5"></i> Sucursales</a>
-            <a href="/staff" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-users w-5"></i> Staff</a>
-            <a href="/horarios" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-clock w-5"></i> Horarios</a>
-            <a href="/servicios" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-cut w-5"></i> Servicios</a>
-            <a href="/turnos" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-calendar-check w-5"></i> Turnos</a>
-            <a href="/caja" class="nav-link p-4 flex items-center gap-3 transition"><i class="fas fa-wallet w-5"></i> Caja y Ranking</a>
-            <a href="/links" class="nav-link p-4 flex items-center gap-3 transition text-blue-400"><i class="fas fa-link w-5"></i> Mis Links de Reserva</a>
+    <nav class="w-full md:w-72 flex-shrink-0 bg-bbCard border-r border-bbBorder flex flex-col justify-between sticky top-0 md:h-screen overflow-y-auto">
+        <div>
+            <div class="p-8 border-b border-bbBorder text-center">
+                <div class="inline-flex items-center justify-center w-14 h-14 bg-bbAccent/10 text-bbAccent rounded-2xl mb-4 border border-bbAccent/20 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+                    <i class="fas fa-cut text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-black tracking-widest text-white uppercase">BookBarber</h1>
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-2">Panel de Control v2</p>
+            </div>
             
-            <div class="mt-10 px-4">
-                <a href="https://wa.me/543513009673?text=Hola%20MedinSur%20Dev,%20quisiera%20solicitar%20una%20personalizaci%C3%B3n%20para%20el%20sistema%20BookBarber" 
-                   target="_blank" class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-green-600 p-2 rounded text-xs transition">
-                    <i class="fab fa-whatsapp"></i> Solicita una mejora
+            <div class="px-4 py-6 space-y-1">
+                <a href="/dashboard" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-semibold bg-bbAccent/10 text-bbAccent border-l-4 border-bbAccent">
+                    <i class="fas fa-home w-5 text-center"></i> Inicio
+                </a>
+                <a href="/sucursales" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-store w-5 text-center"></i> Sucursales
+                </a>
+                <a href="/staff" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-users w-5 text-center"></i> Staff
+                </a>
+                <a href="/horarios" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-clock w-5 text-center"></i> Horarios
+                </a>
+                <a href="/servicios" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-list w-5 text-center"></i> Servicios
+                </a>
+                <a href="/turnos" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-calendar-check w-5 text-center"></i> Turnos
+                </a>
+                <a href="/caja" class="nav-item flex items-center gap-4 px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-bbAccent">
+                    <i class="fas fa-chart-line w-5 text-center"></i> Caja y Ranking
                 </a>
             </div>
+        </div>
 
-            <a href="/logout" class="mt-4 p-4 text-red-500 text-sm hover:bg-red-900/20 transition"><i class="fas fa-sign-out-alt w-5"></i> Cerrar Sesión</a>
+        <div class="p-6 border-t border-bbBorder space-y-4">
+            <a href="/links" class="flex items-center justify-center gap-2 w-full bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white border border-blue-600/20 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all">
+                <i class="fas fa-link"></i> Mis Links de Reserva
+            </a>
+            <a href="https://wa.me/543513009673?text=Hola%20MedinSur%20Dev,%20quisiera%20solicitar%20una%20personalizaci%C3%B3n%20para%20el%20sistema%20BookBarber" target="_blank" class="flex items-center justify-center gap-2 w-full bg-bbBorder hover:bg-green-600/20 hover:text-green-500 hover:border-green-500/50 text-gray-400 border border-transparent py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all">
+                <i class="fab fa-whatsapp"></i> Solicita una mejora
+            </a>
+            <a href="/logout" class="flex items-center justify-center gap-2 w-full text-red-500/70 hover:text-red-500 py-2 text-xs font-bold uppercase tracking-wider transition-all">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
-    <main class="flex-grow p-6">
-        <!-- Header Superior -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <main class="flex-grow p-6 md:p-10 lg:p-12">
+        
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-12">
             <div>
-                <h3 class="text-2xl font-bold text-white">¡Bienvenido!</h3>
-                <p class="text-gray-400 text-sm">Gestiona tu negocio desde aquí.</p>
+                <h2 class="text-3xl md:text-4xl font-black text-white mb-2">Resumen General</h2>
+                <p class="text-gray-500 text-sm">Monitorea el estado de tu negocio y suscripción.</p>
             </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <p class="text-xs text-gray-500 uppercase">Días Gratis</p>
-                    <p class="text-xl font-bold text-orange-500"><%= diasRestantes %></p>
+            
+            <div class="glass-card p-5 rounded-2xl flex items-center gap-6 shadow-lg">
+                <div class="text-center px-4 border-r border-bbBorder">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Días Gratis</p>
+                    <p class="text-3xl font-black <%= diasRestantes > 5 ? 'text-bbAccent' : 'text-red-500' %>">
+                        <%= diasRestantes %>
+                    </p>
                 </div>
-                <a href="https://wa.me/543515920795?text=Hola%20soy%20due%C3%B1o%20de%20<%= sucursales[0].nombre %>%20y%20quiero%20abonar%20mi%20suscripci%C3%B3n%20mensual" 
-                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold text-sm transition">
-                    Activar Suscripción
-                </a>
+                <div>
+                    <a href="https://wa.me/543515920795?text=Hola%20soy%20due%C3%B1o%20de%20<%= sucursales[0] ? sucursales[0].nombre : 'una barbería' %>%20y%20quiero%20abonar%20mi%20suscripci%C3%B3n%20mensual" 
+                       target="_blank"
+                       class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-black px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                        <i class="fab fa-whatsapp text-lg"></i> Activar Suscripción
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="bg-gradient-to-r from-bbAccent/20 to-transparent border-l-4 border-bbAccent p-6 rounded-r-2xl mb-12">
+            <div class="flex items-start gap-4">
+                <div class="mt-1 text-bbAccent"><i class="fas fa-info-circle text-xl"></i></div>
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-1">Detalle de tu plan actual</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Tu cuota mensual proyectada es de <span class="text-bbAccent font-bold">$<%= totalMensual.toLocaleString('es-AR') %></span>. 
+                        Este valor incluye la base del sistema ($15.000) 
+                        <% if (sucursales.length > 1) { %>
+                            y <span class="text-white font-semibold"><%= sucursales.length - 1 %> sucursal(es) adicional(es)</span> (+$5.000 c/u).
+                        <% } else { %>
+                            para tu sucursal principal.
+                        <% } %>
+                    </p>
+                </div>
             </div>
         </div>
 
-        <!-- Info de Suscripción -->
-        <div class="card p-4 rounded-lg mb-8 bg-orange-500/10 border-orange-500/30">
-            <div class="flex items-center gap-4">
-                <i class="fas fa-info-circle text-orange-500 text-xl"></i>
-                <p class="text-sm">
-                    Tu suscripción actual: <span class="font-bold">$<%= 15000 + ((sucursales.length - 1) * 5000) %></span> mensuales. 
-                    (Base $15k + <%= sucursales.length - 1 %> sucursales extra).
-                </p>
-            </div>
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-white">Tus Sucursales</h3>
+            <span class="bg-bbBorder text-gray-400 px-3 py-1 rounded-full text-xs font-bold"><%= sucursales.length %> Activas</span>
         </div>
 
-        <!-- Vista Rápida de Sucursales -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            
             <% sucursales.forEach(s => { %>
-                <div class="card p-5 rounded-xl">
-                    <div class="w-full h-32 bg-gray-800 rounded-lg mb-4 flex items-center justify-center">
-                        <i class="fas fa-image text-gray-700 text-3xl"></i>
+                <div class="glass-card rounded-2xl overflow-hidden group hover:border-bbAccent/50 transition-all duration-300">
+                    <div class="h-40 bg-bbBorder relative overflow-hidden">
+                        <% if (s.foto_url) { %>
+                            <img src="<%= s.foto_url %>" alt="<%= s.nombre %>" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                        <% } else { %>
+                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-600 bg-[#1a1a1a]">
+                                <i class="fas fa-store text-4xl mb-2"></i>
+                                <span class="text-[10px] uppercase tracking-widest">Sin foto de local</span>
+                            </div>
+                        <% } %>
+                        
+                        <% if (s.logo_url) { %>
+                            <div class="absolute bottom-[-16px] right-4 w-12 h-12 bg-bbCard rounded-full border-2 border-bbCard overflow-hidden shadow-lg">
+                                <img src="<%= s.logo_url %>" class="w-full h-full object-cover">
+                            </div>
+                        <% } %>
                     </div>
-                    <h4 class="font-bold text-lg"><%= s.nombre %></h4>
-                    <p class="text-xs text-gray-500 mb-4"><i class="fas fa-map-marker-alt"></i> <%= s.direccion || 'Sin dirección' %></p>
-                    <a href="/sucursales" class="block w-full text-center bg-gray-800 py-2 rounded text-xs hover:bg-gray-700 transition">Gestionar</a>
+                    
+                    <div class="p-6 pt-5">
+                        <h4 class="font-black text-lg text-white mb-1 truncate"><%= s.nombre %></h4>
+                        <p class="text-xs text-gray-500 mb-6 flex items-start gap-2 h-8 overflow-hidden">
+                            <i class="fas fa-map-marker-alt mt-0.5 text-bbAccent"></i> 
+                            <%= s.direccion || 'Dirección no especificada' %>
+                        </p>
+                        
+                        <a href="/sucursales" class="block w-full text-center bg-bbBorder hover:bg-gray-700 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                            Gestionar
+                        </a>
+                    </div>
                 </div>
             <% }) %>
 
-            <div class="card p-5 rounded-xl border-dashed border-2 flex flex-col items-center justify-center text-center">
-                <i class="fas fa-plus-circle text-orange-500 text-3xl mb-2"></i>
-                <p class="font-bold text-sm">Añadir Sucursal</p>
-                <p class="text-[10px] text-gray-500 mb-4">+$5.000 mensuales por local extra.</p>
-                <a href="/sucursales" class="bg-orange-500 text-black px-4 py-1 rounded text-xs font-bold">Añadir</a>
-            </div>
+            <a href="/sucursales" class="glass-card rounded-2xl border-dashed border-2 border-bbBorder hover:border-bbAccent hover:bg-bbAccent/5 flex flex-col items-center justify-center text-center p-8 transition-all duration-300 min-h-[300px] group">
+                <div class="w-16 h-16 rounded-full bg-bbBorder group-hover:bg-bbAccent/20 flex items-center justify-center mb-4 transition-colors">
+                    <i class="fas fa-plus text-2xl text-gray-500 group-hover:text-bbAccent transition-colors"></i>
+                </div>
+                <h4 class="font-black text-white mb-2">Añadir Sucursal</h4>
+                <p class="text-xs text-gray-500 mb-6 px-4">
+                    Expande tu negocio. Costo adicional de <span class="text-bbAccent font-bold">$5.000/mes</span>.
+                </p>
+                <span class="inline-block bg-bbAccent text-black px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
+                    Crear Nueva
+                </span>
+            </a>
         </div>
 
-        <footer class="mt-20 text-center text-gray-700 text-[10px]">
-            © <%= new Date().getFullYear() %> MedinSur Dev | Córdoba, Argentina
+        <footer class="mt-20 pt-8 border-t border-bbBorder flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 text-xs font-semibold">
+            <p>© <%= new Date().getFullYear() %> MedinSur Dev. Todos los derechos reservados.</p>
+            <div class="flex items-center gap-2">
+                <span>Made in Córdoba, Argentina</span>
+                <i class="fas fa-heart text-bbAccent"></i>
+            </div>
         </footer>
     </main>
 
