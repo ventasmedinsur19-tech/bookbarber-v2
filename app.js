@@ -80,6 +80,22 @@ app.post('/sucursales/guardar', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
+app.post('/sucursales/editar/:id', isAuth, async (req, res) => {
+  try {
+    const { nombre, direccion, logo_url, foto_url } = req.body;
+    await db.query('UPDATE sucursales SET nombre = ?, direccion = ?, logo_url = ?, foto_url = ? WHERE id = ? AND usuario_id = ?', 
+    [nombre, direccion, logo_url, foto_url, req.params.id, req.session.userId]);
+    res.redirect('/sucursales');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/sucursales/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query('DELETE FROM sucursales WHERE id = ? AND usuario_id = ?', [req.params.id, req.session.userId]);
+    res.redirect('/sucursales');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
 // --- GESTIÓN DE STAFF ---
 app.get('/staff', isAuth, async (req, res) => {
   try {
@@ -93,6 +109,29 @@ app.post('/staff/guardar', isAuth, async (req, res) => {
   try {
     const { sucursal_id, nombre, foto_url } = req.body;
     await db.query('INSERT INTO barberos (sucursal_id, nombre, foto_url) VALUES (?, ?, ?)', [sucursal_id, nombre, foto_url]);
+    res.redirect('/staff');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/staff/editar/:id', isAuth, async (req, res) => {
+  try {
+    const { nombre, foto_url } = req.body;
+    await db.query(`
+      UPDATE barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      SET b.nombre = ?, b.foto_url = ? 
+      WHERE b.id = ? AND s.usuario_id = ?`, 
+      [nombre, foto_url, req.params.id, req.session.userId]);
+    res.redirect('/staff');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/staff/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE b FROM barberos b 
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE b.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/staff');
   } catch (e) { res.status(500).send(e.message); }
 });
@@ -114,6 +153,29 @@ app.post('/servicios/guardar', isAuth, async (req, res) => {
   try {
     const { sucursal_id, nombre, precio, duracion } = req.body;
     await db.query('INSERT INTO servicios (sucursal_id, nombre, precio, duracion) VALUES (?, ?, ?, ?)', [sucursal_id, nombre, precio, duracion]);
+    res.redirect('/servicios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/servicios/editar/:id', isAuth, async (req, res) => {
+  try {
+    const { nombre, precio, duracion } = req.body;
+    await db.query(`
+      UPDATE servicios ser 
+      JOIN sucursales s ON ser.sucursal_id = s.id 
+      SET ser.nombre = ?, ser.precio = ?, ser.duracion = ? 
+      WHERE ser.id = ? AND s.usuario_id = ?`, 
+      [nombre, precio, duracion, req.params.id, req.session.userId]);
+    res.redirect('/servicios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/servicios/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE ser FROM servicios ser 
+      JOIN sucursales s ON ser.sucursal_id = s.id 
+      WHERE ser.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/servicios');
   } catch (e) { res.status(500).send(e.message); }
 });
@@ -145,6 +207,31 @@ app.post('/horarios/guardar', isAuth, async (req, res) => {
     const { barbero_id, dia, hora_inicio, hora_fin } = req.body;
     await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
     [barbero_id, dia, hora_inicio, hora_fin]);
+    res.redirect('/horarios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/horarios/editar/:id', isAuth, async (req, res) => {
+  try {
+    const { dia, hora_inicio, hora_fin } = req.body;
+    await db.query(`
+      UPDATE horarios h 
+      JOIN barberos b ON h.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      SET h.dia = ?, h.hora_inicio = ?, h.hora_fin = ? 
+      WHERE h.id = ? AND s.usuario_id = ?`, 
+      [dia, hora_inicio, hora_fin, req.params.id, req.session.userId]);
+    res.redirect('/horarios');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/horarios/eliminar/:id', isAuth, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE h FROM horarios h 
+      JOIN barberos b ON h.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id 
+      WHERE h.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
     res.redirect('/horarios');
   } catch (e) { res.status(500).send(e.message); }
 });
@@ -196,10 +283,20 @@ app.post('/turnos/estado', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- SECCIÓN CAJA Y RANKING REAL ---
-app.get('/caja-ranking', isAuth, async (req, res) => {
+app.post('/turnos/eliminar/:id', isAuth, async (req, res) => {
   try {
-    // Traemos solo los turnos exitosos vinculados al usuario logueado
+    await db.query(`
+      DELETE t FROM turnos t
+      JOIN barberos b ON t.barbero_id = b.id
+      JOIN sucursales s ON b.sucursal_id = s.id
+      WHERE t.id = ? AND s.usuario_id = ?`, [req.params.id, req.session.userId]);
+    res.redirect('/turnos');
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- SECCIÓN CAJA ---
+app.get('/caja', isAuth, async (req, res) => {
+  try {
     const [resultados] = await db.query(`
       SELECT 
         suc.nombre AS sucursal_nombre,
@@ -213,11 +310,9 @@ app.get('/caja-ranking', isAuth, async (req, res) => {
       WHERE t.estado = 'completado' AND suc.usuario_id = ?
       ORDER BY t.fecha DESC`, [req.session.userId]);
 
-    // Extraemos las sucursales del usuario de forma única para cargar el selector
     const sucursales = [...new Set(resultados.map(r => r.sucursal_nombre))];
     
-    // Si la base está vacía o el array de sucursales da vacío, le mandamos una estructura segura para que no rompa el .ejs
-    res.render('caja_ranking', { 
+    res.render('caja', { 
       turnosFacturados: resultados,
       sucursales: sucursales
     });
@@ -265,4 +360,3 @@ app.post('/auth/login', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3000, () => console.log("Servidor BookBarber Activo"));
-
