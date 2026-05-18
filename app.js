@@ -66,8 +66,9 @@ app.get('/dashboard', isAuth, async (req, res) => {
 // --- GESTIÓN DE SUCURSALES ---
 app.get('/sucursales', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
-    res.render('sucursales_gestion', { sucursales });
+    res.render('sucursales_gestion', { user: user[0], sucursales });
   } catch (e) { res.status(500).send(e.message); }
 });
 
@@ -99,9 +100,10 @@ app.post('/sucursales/eliminar/:id', isAuth, async (req, res) => {
 // --- GESTIÓN DE STAFF ---
 app.get('/staff', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
     const [barberos] = await db.query('SELECT b.*, s.nombre as sucursal_nombre FROM barberos b JOIN sucursales s ON b.sucursal_id = s.id WHERE s.usuario_id = ?', [req.session.userId]);
-    res.render('staff', { sucursales, barberos });
+    res.render('staff', { user: user[0], sucursales, barberos });
   } catch (e) { res.status(500).send(e.message); }
 });
 
@@ -139,13 +141,14 @@ app.post('/staff/eliminar/:id', isAuth, async (req, res) => {
 // --- GESTIÓN DE SERVICIOS ---
 app.get('/servicios', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
     const [servicios] = await db.query(`
       SELECT ser.*, s.nombre as sucursal_nombre 
       FROM servicios ser 
       JOIN sucursales s ON ser.sucursal_id = s.id 
       WHERE s.usuario_id = ?`, [req.session.userId]);
-    res.render('servicios_gestion', { sucursales, servicios }); 
+    res.render('servicios_gestion', { user: user[0], sucursales, servicios }); 
   } catch (e) { res.status(500).send(e.message); }
 });
 
@@ -183,6 +186,7 @@ app.post('/servicios/eliminar/:id', isAuth, async (req, res) => {
 // --- GESTIÓN DE HORARIOS ---
 app.get('/horarios', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [barberos] = await db.query(`
       SELECT b.id, b.nombre, s.nombre as sucursal_nombre 
       FROM barberos b 
@@ -195,10 +199,10 @@ app.get('/horarios', isAuth, async (req, res) => {
       JOIN barberos b ON h.barbero_id = b.id
       JOIN sucursales s ON b.sucursal_id = s.id 
       WHERE s.usuario_id = ?
-      ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'), h.hora_inicio`, 
+      ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo')`, 
       [req.session.userId]);
 
-    res.render('horarios', { barberos, horarios });
+    res.render('horarios', { user: user[0], barberos, horarios });
   } catch (e) { res.status(500).send(e.message); }
 });
 
@@ -239,6 +243,7 @@ app.post('/horarios/eliminar/:id', isAuth, async (req, res) => {
 // --- GESTIÓN DE TURNOS ---
 app.get('/turnos', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [barberos] = await db.query(`
       SELECT b.id, b.nombre, s.nombre as sucursal_nombre 
       FROM barberos b 
@@ -258,9 +263,9 @@ app.get('/turnos', isAuth, async (req, res) => {
       JOIN servicios ser ON t.servicio_id = ser.id
       JOIN sucursales s ON b.sucursal_id = s.id
       WHERE s.usuario_id = ?
-      ORDER BY t.fecha ASC, t.hora ASC`, [req.session.userId]);
+      ORDER BY t.id DESC`, [req.session.userId]);
 
-    res.render('turnos', { barberos, servicios, turnos });
+    res.render('turnos', { user: user[0], barberos, servicios, turnos });
   } catch (e) { res.status(500).send("Error al cargar turnos: " + e.message); }
 });
 
@@ -294,30 +299,32 @@ app.post('/turnos/eliminar/:id', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- SECCIÓN CAJA ---
+// --- SECCIÓN CAJA Y RANKING (Apuntando correctamente a caja_ranking.ejs) ---
 app.get('/caja', isAuth, async (req, res) => {
   try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
     const [resultados] = await db.query(`
       SELECT 
         suc.nombre AS sucursal_nombre,
         b.nombre AS barbero_nombre,
-        t.fecha,
+        t.id,
         ser.precio
       FROM turnos t
       JOIN barberos b ON t.barbero_id = b.id
       JOIN sucursales suc ON b.sucursal_id = suc.id
       JOIN servicios ser ON t.servicio_id = ser.id
       WHERE t.estado = 'completado' AND suc.usuario_id = ?
-      ORDER BY t.fecha DESC`, [req.session.userId]);
+      ORDER BY t.id DESC`, [req.session.userId]);
 
     const sucursales = [...new Set(resultados.map(r => r.sucursal_nombre))];
     
-    res.render('caja', { 
+    res.render('caja_ranking', { 
+      user: user[0],
       turnosFacturados: resultados,
       sucursales: sucursales
     });
   } catch (e) { 
-    res.status(500).send("Error en Caja y Ranking: " + e.message); 
+    res.status(500).send("Error en Caja: " + e.message); 
   }
 });
 
