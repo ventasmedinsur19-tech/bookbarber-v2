@@ -208,9 +208,39 @@ app.get('/horarios', isAuth, async (req, res) => {
 
 app.post('/horarios/guardar', isAuth, async (req, res) => {
   try {
-    const { barbero_id, dia, hora_inicio, hora_fin } = req.body;
-    await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
-    [barbero_id, dia, hora_inicio, hora_fin]);
+    const { barbero_id, dias, inicio_1, fin_1, inicio_2, fin_2 } = req.body;
+    
+    // Convertimos la variable en un array por si eligieron solo un día
+    let diasSeleccionados = [];
+    if (Array.isArray(dias)) {
+        diasSeleccionados = dias;
+    } else if (dias) {
+        diasSeleccionados = [dias];
+    }
+
+    // Diccionario para convertir el nombre corto al nombre completo de la DB
+    const mapaDias = {
+      'Lun': 'Lunes', 'Mar': 'Martes', 'Mie': 'Miércoles', 
+      'Jue': 'Jueves', 'Vie': 'Viernes', 'Sab': 'Sábado', 'Dom': 'Domingo'
+    };
+
+    // Bucle para iterar por cada día seleccionado
+    for (let diaCorto of diasSeleccionados) {
+      let diaCompleto = mapaDias[diaCorto] || diaCorto;
+
+      // Guardar el Primer Turno
+      if (inicio_1 && fin_1) {
+        await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
+        [barbero_id, diaCompleto, inicio_1, fin_1]);
+      }
+
+      // Guardar el Segundo Turno (si lo completaron)
+      if (inicio_2 && fin_2) {
+        await db.query('INSERT INTO horarios (barbero_id, dia, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)', 
+        [barbero_id, diaCompleto, inicio_2, fin_2]);
+      }
+    }
+
     res.redirect('/horarios');
   } catch (e) { res.status(500).send(e.message); }
 });
@@ -299,7 +329,7 @@ app.post('/turnos/eliminar/:id', isAuth, async (req, res) => {
   } catch (e) { res.status(500).send(e.message); }
 });
 
-// --- SECCIÓN CAJA Y RANKING (Apuntando correctamente a caja_ranking.ejs) ---
+// --- SECCIÓN CAJA Y RANKING ---
 app.get('/caja', isAuth, async (req, res) => {
   try {
     const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
