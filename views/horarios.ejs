@@ -1,134 +1,166 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horarios | BookBarber Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        bbDark: '#0a0a0a',
-                        bbCard: '#141414',
-                        bbBorder: '#262626',
-                        bbAccent: '#f97316'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #0a0a0a; color: #e5e5e5; }
-        .glass-card { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid #262626; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios - BookBarber</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { background-color: #121214; color: #e1e1e6; }
+    /* Ocultar checkbox nativo pero mantener funcionalidad */
+    input[type="checkbox"]:checked + div {
+      background-color: #ea580c; /* orange-600 */
+      border-color: #ea580c;
+      color: #fff;
+    }
+  </style>
 </head>
-<body class="font-sans antialiased min-h-screen p-4 md:p-8">
-    <div class="max-w-5xl mx-auto">
+<body class="p-4 min-h-screen font-sans">
+
+  <div class="max-w-md mx-auto flex justify-between items-center mb-6">
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold text-white">Horarios</h1>
+      <button onclick="toggleInfoModal()" class="w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-orange-500 font-bold text-sm flex items-center justify-center transition">
+        i
+      </button>
+    </div>
+    <a href="/dashboard" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300 font-medium rounded-lg transition border border-zinc-700">
+      ← Volver al Dashboard
+    </a>
+  </div>
+
+  <div class="max-w-md mx-auto space-y-6">
+
+    <div id="infoModal" class="hidden bg-zinc-900 border border-orange-500/30 rounded-xl p-4 shadow-xl">
+      <div class="flex justify-between items-start mb-2">
+        <h3 class="text-orange-500 font-bold flex items-center gap-2">💡 ¿Qué hacer en esta sección?</h3>
+        <button onclick="toggleInfoModal()" class="text-zinc-400 hover:text-white font-bold">✕</button>
+      </div>
+      <p class="text-sm text-zinc-300 leading-relaxed">
+        Configurá la agenda de tus profesionales de forma rápida. Podés seleccionar varios días a la vez (ej: Lunes a Viernes) y armar horarios de corrido o cortados (mañana y tarde). Esto define cuándo tus clientes pueden reservar turnos.
+      </p>
+    </div>
+
+    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg">
+      <h2 class="text-lg font-semibold text-orange-500 mb-4">Añadir Turno Laboral</h2>
+      <form action="/horarios/guardar" method="POST" class="space-y-5">
         
-        <div class="flex items-center justify-between mb-10 border-b border-bbBorder pb-6">
-            <div class="flex items-center gap-4">
-                <a href="/dashboard" class="flex items-center justify-center w-10 h-10 rounded-xl bg-bbBorder text-gray-400 hover:text-bbAccent transition-all">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-black text-white">Gestión de Horarios</h1>
-                    <button onclick="toggleInfoModal()" class="text-[10px] text-bbAccent font-bold hover:underline">¿Qué hago acá? (i)</button>
-                </div>
-            </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Profesional</label>
+          <% if (barberos.length === 0) { %>
+            <p class="text-red-400 text-xs bg-red-950/30 p-2 rounded border border-red-900/50">⚠️ Registrá al menos un profesional en la sección Staff primero.</p>
+          <% } else { %>
+            <select name="barbero_id" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
+              <option value="" disabled selected>-- Seleccionar Barbero --</option>
+              <% barberos.forEach(b => { %>
+                <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
+              <% }) %>
+            </select>
+          <% } %>
         </div>
 
-        <div id="infoModal" class="hidden glass-card p-4 rounded-xl border border-bbAccent/30 mb-8">
-            <h3 class="text-bbAccent font-bold mb-2">💡 ¿Cómo funciona?</h3>
-            <p class="text-sm text-gray-400">Definí el horario de atención para cada profesional. Esto permitirá que los clientes vean disponibilidad real al momento de reservar. Podés editar o borrar turnos laborales existentes en cualquier momento.</p>
-        </div>
-
-        <div class="glass-card p-6 md:p-8 rounded-2xl mb-12 shadow-lg">
-            <h2 class="text-lg font-bold text-white mb-6">Añadir Nuevo Turno Laboral</h2>
-            <form action="/horarios/guardar" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="md:col-span-4">
-                    <label class="block text-xs text-gray-500 mb-2 font-bold uppercase">Asignar a Barbero</label>
-                    <select name="barbero_id" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-4 text-sm text-white focus:border-bbAccent outline-none">
-                        <% barberos.forEach(b => { %>
-                            <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
-                        <% }) %>
-                    </select>
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-2">Días de la semana (Seleccioná varios)</label>
+          <div class="grid grid-cols-4 gap-2 sm:grid-cols-7">
+            <% ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].forEach(dia => { %>
+              <label class="cursor-pointer text-center">
+                <input type="checkbox" name="dias[]" value="<%= dia %>" class="peer hidden">
+                <div class="w-full py-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-medium transition-all peer-checked:bg-orange-600 peer-checked:text-white peer-checked:border-orange-500">
+                  <%= dia %>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block text-xs text-gray-500 mb-2 font-bold uppercase">Día</label>
-                    <select name="dia" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-4 text-sm text-white focus:border-bbAccent outline-none">
-                        <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
-                        <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
-                        <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option><option value="Domingo">Domingo</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-500 mb-2 font-bold uppercase">Apertura</label>
-                    <input type="time" name="hora_inicio" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-4 text-sm text-white focus:border-bbAccent outline-none" style="color-scheme: dark;">
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-500 mb-2 font-bold uppercase">Cierre</label>
-                    <input type="time" name="hora_fin" required class="w-full bg-bbDark border border-bbBorder rounded-xl p-4 text-sm text-white focus:border-bbAccent outline-none" style="color-scheme: dark;">
-                </div>
-                <button type="submit" class="md:col-span-4 bg-bbAccent text-black font-black uppercase py-4 rounded-xl hover:bg-orange-600 transition-all">Guardar Horario</button>
-            </form>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <% horarios.forEach(h => { %>
-                <div class="glass-card p-5 rounded-2xl relative">
-                    <span class="text-[10px] text-gray-500 font-bold uppercase"><%= h.sucursal_nombre %></span>
-                    <h4 class="font-black text-white text-lg mb-4"><%= h.dia %></h4>
-                    <p class="text-sm text-gray-300 font-semibold mb-4"><i class="fas fa-user text-bbAccent mr-2"></i> <%= h.barbero_nombre %></p>
-                    <div class="flex items-center justify-between text-sm text-gray-400 mb-4 bg-bbDark p-2 rounded-lg">
-                        <span><%= h.hora_inicio.substring(0,5) %></span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
-                        <span><%= h.hora_fin.substring(0,5) %></span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="openEditModal('<%= h.id %>', '<%= h.dia %>', '<%= h.hora_inicio %>', '<%= h.hora_fin %>')" class="flex-1 bg-bbBorder py-2 rounded-lg text-xs hover:bg-zinc-700">✏️ Editar</button>
-                        <form action="/horarios/eliminar/<%= h.id %>" method="POST" class="flex-1" onsubmit="return confirm('¿Eliminar este horario?');">
-                            <button type="submit" class="w-full bg-red-900/20 text-red-500 py-2 rounded-lg text-xs hover:bg-red-900/40">🗑️ Borrar</button>
-                        </form>
-                    </div>
-                </div>
+              </label>
             <% }) %>
+          </div>
         </div>
+
+        <div class="space-y-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
+          
+          <div>
+            <label class="block text-xs font-bold text-zinc-300 mb-2 border-b border-zinc-800 pb-1">Primer Turno (Ej: Mañana)</label>
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <label class="block text-[10px] text-zinc-500 mb-1">Apertura</label>
+                <input type="time" name="inicio_1" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
+              </div>
+              <div class="flex-1">
+                <label class="block text-[10px] text-zinc-500 mb-1">Cierre</label>
+                <input type="time" name="fin_1" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-zinc-300 mb-2 border-b border-zinc-800 pb-1 flex justify-between">
+              Segundo Turno
+              <span class="text-[10px] text-orange-500 font-normal">*Opcional para horario cortado</span>
+            </label>
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <label class="block text-[10px] text-zinc-500 mb-1">Re-apertura</label>
+                <input type="time" name="inicio_2" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
+              </div>
+              <div class="flex-1">
+                <label class="block text-[10px] text-zinc-500 mb-1">Cierre Final</label>
+                <input type="time" name="fin_2" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg transition text-sm shadow-md shadow-orange-900/20" <%= barberos.length === 0 ? 'disabled' : '' %>>
+          Guardar Horarios
+        </button>
+      </form>
     </div>
 
-    <div id="editModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="glass-card p-6 rounded-2xl w-full max-w-sm">
-            <h3 class="font-bold text-white mb-4">Editar Horario</h3>
-            <form id="editForm" method="POST" class="space-y-4">
-                <select name="dia" id="editDia" class="w-full bg-bbDark border border-bbBorder p-3 rounded-lg text-white">
-                    <option value="Lunes">Lunes</option><option value="Martes">Martes</option>
-                    <option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option>
-                    <option value="Viernes">Viernes</option><option value="Sábado">Sábado</option><option value="Domingo">Domingo</option>
-                </select>
-                <input type="time" name="hora_inicio" id="editInicio" class="w-full bg-bbDark border border-bbBorder p-3 rounded-lg text-white" style="color-scheme: dark;">
-                <input type="time" name="hora_fin" id="editFin" class="w-full bg-bbDark border border-bbBorder p-3 rounded-lg text-white" style="color-scheme: dark;">
-                <div class="flex gap-2">
-                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-bbBorder py-2 rounded-lg">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-bbAccent py-2 rounded-lg text-black font-bold">Actualizar</button>
+    <div class="space-y-3">
+      <h2 class="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">Agenda Actual</h2>
+      
+      <% if (horarios.length === 0) { %>
+        <p class="text-zinc-500 text-sm italic text-center py-4">No hay horarios configurados todavía.</p>
+      <% } else { %>
+        <div class="grid grid-cols-1 gap-3">
+          <% horarios.forEach(h => { %>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-2 shadow-md">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="font-bold text-white text-sm"><%= h.barbero_nombre %></h3>
+                  <span class="inline-block mt-1 text-[10px] font-bold tracking-wide uppercase text-zinc-400">
+                    <%= h.sucursal_nombre %>
+                  </span>
                 </div>
-            </form>
-        </div>
-    </div>
+                <span class="bg-orange-950/40 text-orange-400 border border-orange-900/30 px-2 py-1 rounded text-xs font-bold w-12 text-center">
+                  <%= h.dia %>
+                </span>
+              </div>
+              
+              <div class="bg-zinc-800 rounded-lg p-2 mt-2 flex justify-between items-center text-sm text-zinc-300">
+                <span><i class="fas fa-clock text-zinc-500 mr-1 text-xs"></i> <%= h.hora_inicio.substring(0,5) %> hs</span>
+                <span class="text-zinc-500 text-[10px] uppercase">a</span>
+                <span><i class="fas fa-flag-checkered text-zinc-500 mr-1 text-xs"></i> <%= h.hora_fin.substring(0,5) %> hs</span>
+              </div>
 
-    <script>
-        function toggleInfoModal() { document.getElementById('infoModal').classList.toggle('hidden'); }
-        function openEditModal(id, dia, inicio, fin) {
-            document.getElementById('editForm').action = `/horarios/editar/${id}`;
-            document.getElementById('editDia').value = dia;
-            document.getElementById('editInicio').value = inicio.substring(0,5);
-            document.getElementById('editFin').value = fin.substring(0,5);
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
-    </script>
+              <div class="flex gap-2 border-t border-zinc-800/80 pt-3 mt-2">
+                <form action="/horarios/eliminar/<%= h.id %>" method="POST" class="w-full" onsubmit="return confirm('¿Seguro que querés eliminar este turno de la agenda?');">
+                  <button type="submit" class="w-full bg-red-950/40 hover:bg-red-900/40 text-red-400 border border-red-900/30 text-xs py-2 rounded-lg font-medium transition">
+                    🗑️ Eliminar Horario
+                  </button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function toggleInfoModal() {
+      const modal = document.getElementById('infoModal');
+      modal.classList.toggle('hidden');
+    }
+  </script>
 </body>
 </html>
