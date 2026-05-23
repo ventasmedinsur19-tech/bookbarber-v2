@@ -3,187 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horarios - BookBarber</title>
+  <title>Gestión de Horarios - BookBarber</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    body { background-color: #121214; color: #e1e1e6; }
-    input[type="checkbox"]:checked + div {
-      background-color: #ea580c; 
-      border-color: #ea580c;
-      color: #fff;
-    }
+    /* Estilo para colapsables */
+    .collapse-content { display: none; }
+    .collapse-open .collapse-content { display: block; }
   </style>
 </head>
-<body class="p-4 min-h-screen font-sans">
+<body class="bg-zinc-950 text-zinc-100 p-4">
 
-  <div class="max-w-md mx-auto flex justify-between items-center mb-6">
-    <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-bold text-white">Horarios</h1>
-      <button onclick="toggleInfoModal()" class="w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-orange-500 font-bold text-sm flex items-center justify-center transition">
-        i
-      </button>
-    </div>
-    <a href="/dashboard" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300 font-medium rounded-lg transition border border-zinc-700">
-      ← Volver
-    </a>
-  </div>
+  <div class="max-w-md mx-auto">
+    <h1 class="text-2xl font-bold mb-6 text-white">Agenda por Profesional</h1>
 
-  <div class="max-w-md mx-auto space-y-6">
+    <% 
+      // Agrupamos barberos por sucursal para la vista jerárquica
+      const porSucursal = {};
+      barberos.forEach(b => {
+        if (!porSucursal[b.sucursal_nombre]) porSucursal[b.sucursal_nombre] = [];
+        porSucursal[b.sucursal_nombre].push(b);
+      });
+    %>
 
-    <div id="infoModal" class="hidden bg-zinc-900 border border-orange-500/30 rounded-xl p-4 shadow-xl">
-      <div class="flex justify-between items-start mb-2">
-        <h3 class="text-orange-500 font-bold flex items-center gap-2">💡 ¿Qué hacer en esta sección?</h3>
-        <button onclick="toggleInfoModal()" class="text-zinc-400 hover:text-white font-bold">✕</button>
-      </div>
-      <p class="text-sm text-zinc-300 leading-relaxed">
-        Configurá la agenda de tus profesionales. Seleccioná varios días a la vez (ej: Lunes a Viernes) y armar horarios de corrido o cortados (mañana y tarde).
-      </p>
-    </div>
-
-    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg">
-      <h2 class="text-lg font-semibold text-orange-500 mb-4">Añadir Turno Laboral</h2>
-      <form action="/horarios/guardar" method="POST" class="space-y-5">
-        
-        <div>
-          <label class="block text-xs font-medium text-zinc-400 mb-1">Profesional</label>
-          <% if (barberos.length === 0) { %>
-            <p class="text-red-400 text-xs bg-red-950/30 p-2 rounded border border-red-900/50">⚠️ Registrá un profesional en la sección Staff primero.</p>
-          <% } else { %>
-            <select name="barbero_id" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
-              <option value="" disabled selected>-- Seleccionar Barbero --</option>
-              <% barberos.forEach(b => { %>
-                <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
-              <% }) %>
-            </select>
-          <% } %>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-zinc-400 mb-2">Días de la semana (Seleccioná varios)</label>
-          <div class="grid grid-cols-4 gap-2 sm:grid-cols-7">
-            <% ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].forEach(dia => { %>
-              <label class="cursor-pointer text-center">
-                <input type="checkbox" name="dias[]" value="<%= dia %>" class="peer hidden">
-                <div class="w-full py-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-medium transition-all peer-checked:bg-orange-600 peer-checked:text-white peer-checked:border-orange-500">
-                  <%= dia %>
-                </div>
-              </label>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="space-y-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
-          <div>
-            <label class="block text-xs font-bold text-zinc-300 mb-2 border-b border-zinc-800 pb-1">Primer Turno (Ej: Mañana)</label>
-            <div class="flex items-center gap-3">
-              <div class="flex-1">
-                <label class="block text-[10px] text-zinc-500 mb-1">Apertura</label>
-                <input type="time" name="inicio_1" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
-              </div>
-              <div class="flex-1">
-                <label class="block text-[10px] text-zinc-500 mb-1">Cierre</label>
-                <input type="time" name="fin_1" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
-              </div>
-            </div>
+    <div class="space-y-4">
+      <% Object.keys(porSucursal).forEach(sucursal => { %>
+        <div class="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900">
+          <div class="bg-zinc-800 px-4 py-3 border-b border-zinc-700 font-bold text-orange-500 uppercase tracking-wider text-sm">
+            <%= sucursal %>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-zinc-300 mb-2 border-b border-zinc-800 pb-1 flex justify-between">
-              Segundo Turno
-              <span class="text-[10px] text-orange-500 font-normal">*Opcional para horario cortado</span>
-            </label>
-            <div class="flex items-center gap-3">
-              <div class="flex-1">
-                <label class="block text-[10px] text-zinc-500 mb-1">Re-apertura</label>
-                <input type="time" name="inicio_2" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
-              </div>
-              <div class="flex-1">
-                <label class="block text-[10px] text-zinc-500 mb-1">Cierre Final</label>
-                <input type="time" name="fin_2" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-orange-500" style="color-scheme: dark;">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg transition text-sm shadow-md shadow-orange-900/20" <%= barberos.length === 0 ? 'disabled' : '' %>>
-          Guardar Horarios
-        </button>
-      </form>
-    </div>
-
-    <div class="space-y-3">
-      <h2 class="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">Agenda Actual</h2>
-      
-      <% 
-        // Lógica para agrupar los horarios de la base de datos por Barbero y por Día
-        const agenda = {};
-        horarios.forEach(h => {
-          if (!agenda[h.barbero_nombre]) {
-            agenda[h.barbero_nombre] = { sucursal: h.sucursal_nombre, dias: {} };
-          }
-          if (!agenda[h.barbero_nombre].dias[h.dia]) {
-            agenda[h.barbero_nombre].dias[h.dia] = [];
-          }
-          agenda[h.barbero_nombre].dias[h.dia].push(h);
-        });
-      %>
-
-      <% if (Object.keys(agenda).length === 0) { %>
-        <p class="text-zinc-500 text-sm italic text-center py-4">No hay horarios configurados todavía.</p>
-      <% } else { %>
-        <div class="space-y-5">
-          <% Object.keys(agenda).forEach(barbero => { %>
-            
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+          <% porSucursal[sucursal].forEach(barbero => { %>
+            <div class="border-b border-zinc-800 last:border-0" id="barbero-<%= barbero.id %>">
+              <button onclick="toggleBarbero(<%= barbero.id %>)" class="w-full flex justify-between items-center p-4 hover:bg-zinc-800/50 transition">
+                <span class="font-medium text-zinc-200"><%= barbero.nombre %></span>
+                <span class="text-zinc-500 text-xs">⬇️</span>
+              </button>
               
-              <div class="bg-zinc-800/60 px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
-                <div>
-                  <h3 class="font-bold text-white text-sm"><%= barbero %></h3>
-                  <span class="text-[10px] font-bold tracking-wide uppercase text-orange-500">
-                    <%= agenda[barbero].sucursal %>
-                  </span>
+              <div class="collapse-content bg-zinc-950 p-4 border-t border-zinc-800">
+                <div class="text-xs text-zinc-400 mb-4">
+                  Horarios configurados:
+                  <ul class="mt-2 space-y-1">
+                    <% 
+                      const horariosBarbero = horarios.filter(h => h.barbero_id === barbero.id);
+                      if(horariosBarbero.length === 0) { %> <li class="italic text-zinc-600">Sin horarios</li> <% }
+                      horariosBarbero.forEach(h => { 
+                    %>
+                      <li class="flex justify-between bg-zinc-900 p-2 rounded">
+                        <span><%= h.dia %>: <%= h.hora_inicio.substring(0,5) %> - <%= h.hora_fin.substring(0,5) %></span>
+                        <form action="/horarios/eliminar/<%= h.id %>" method="POST">
+                          <button class="text-red-500 font-bold">✕</button>
+                        </form>
+                      </li>
+                    <% }) %>
+                  </ul>
                 </div>
-              </div>
-
-              <div class="p-3 space-y-2">
-                <% Object.keys(agenda[barbero].dias).forEach(dia => { %>
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-800/60 gap-2">
-                    
-                    <span class="text-xs font-bold text-zinc-300 w-24 flex items-center gap-1.5">
-                      <i class="far fa-calendar-alt text-zinc-500"></i> <%= dia %>
-                    </span>
-                    
-                    <div class="flex-1 flex flex-wrap gap-2 sm:justify-end">
-                      <% agenda[barbero].dias[dia].forEach(turno => { %>
-                        <div class="flex items-center bg-zinc-800 border border-zinc-700 rounded text-xs shadow-sm">
-                          <span class="px-2 py-1 text-zinc-300 font-medium">
-                            <%= turno.hora_inicio.substring(0,5) %> a <%= turno.hora_fin.substring(0,5) %>
-                          </span>
-                          
-                          <form action="/horarios/eliminar/<%= turno.id %>" method="POST" class="border-l border-zinc-700 flex" onsubmit="return confirm('¿Seguro que querés eliminar este turno de <%= dia %>?');">
-                            <button type="submit" class="px-2 py-1 text-red-400 hover:bg-red-950/80 hover:text-red-300 transition rounded-r flex items-center justify-center">
-                              ✕
-                            </button>
-                          </form>
-                        </div>
-                      <% }) %>
-                    </div>
-
-                  </div>
-                <% }) %>
+                
+                <a href="/horarios/nuevo?barbero_id=<%= barbero.id %>" class="block w-full text-center py-2 bg-orange-600 rounded-lg text-sm font-bold">
+                  Editar / Añadir Horarios
+                </a>
               </div>
             </div>
           <% }) %>
         </div>
-      <% } %>
+      <% }) %>
     </div>
   </div>
 
   <script>
-    function toggleInfoModal() {
-      const modal = document.getElementById('infoModal');
-      modal.classList.toggle('hidden');
+    function toggleBarbero(id) {
+      const container = document.getElementById('barbero-' + id);
+      container.classList.toggle('collapse-open');
     }
   </script>
 </body>
