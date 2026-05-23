@@ -5,74 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Horarios - BookBarber</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Estilo para colapsables */
-    .collapse-content { display: none; }
-    .collapse-open .collapse-content { display: block; }
-  </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 p-4">
+<body class="bg-zinc-950 text-zinc-200 p-4 min-h-screen">
 
-  <div class="max-w-md mx-auto">
-    <h1 class="text-2xl font-bold mb-6 text-white">Agenda por Profesional</h1>
+  <div class="max-w-md mx-auto space-y-8">
+    
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-white">Horarios</h1>
+      <a href="/dashboard" class="text-sm bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700">Volver</a>
+    </div>
 
-    <% 
-      // Agrupamos barberos por sucursal para la vista jerárquica
-      const porSucursal = {};
-      barberos.forEach(b => {
-        if (!porSucursal[b.sucursal_nombre]) porSucursal[b.sucursal_nombre] = [];
-        porSucursal[b.sucursal_nombre].push(b);
-      });
-    %>
+    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg">
+      <h2 class="text-lg font-semibold text-orange-500 mb-4">Añadir Turno Laboral</h2>
+      <form action="/horarios/guardar" method="POST" class="space-y-4">
+        
+        <select name="barbero_id" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm">
+          <option value="" disabled selected>-- Seleccionar Barbero --</option>
+          <% barberos.forEach(b => { %>
+            <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
+          <% }) %>
+        </select>
 
-    <div class="space-y-4">
-      <% Object.keys(porSucursal).forEach(sucursal => { %>
-        <div class="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900">
-          <div class="bg-zinc-800 px-4 py-3 border-b border-zinc-700 font-bold text-orange-500 uppercase tracking-wider text-sm">
-            <%= sucursal %>
-          </div>
-
-          <% porSucursal[sucursal].forEach(barbero => { %>
-            <div class="border-b border-zinc-800 last:border-0" id="barbero-<%= barbero.id %>">
-              <button onclick="toggleBarbero(<%= barbero.id %>)" class="w-full flex justify-between items-center p-4 hover:bg-zinc-800/50 transition">
-                <span class="font-medium text-zinc-200"><%= barbero.nombre %></span>
-                <span class="text-zinc-500 text-xs">⬇️</span>
-              </button>
-              
-              <div class="collapse-content bg-zinc-950 p-4 border-t border-zinc-800">
-                <div class="text-xs text-zinc-400 mb-4">
-                  Horarios configurados:
-                  <ul class="mt-2 space-y-1">
-                    <% 
-                      const horariosBarbero = horarios.filter(h => h.barbero_id === barbero.id);
-                      if(horariosBarbero.length === 0) { %> <li class="italic text-zinc-600">Sin horarios</li> <% }
-                      horariosBarbero.forEach(h => { 
-                    %>
-                      <li class="flex justify-between bg-zinc-900 p-2 rounded">
-                        <span><%= h.dia %>: <%= h.hora_inicio.substring(0,5) %> - <%= h.hora_fin.substring(0,5) %></span>
-                        <form action="/horarios/eliminar/<%= h.id %>" method="POST">
-                          <button class="text-red-500 font-bold">✕</button>
-                        </form>
-                      </li>
-                    <% }) %>
-                  </ul>
-                </div>
-                
-                <a href="/horarios/nuevo?barbero_id=<%= barbero.id %>" class="block w-full text-center py-2 bg-orange-600 rounded-lg text-sm font-bold">
-                  Editar / Añadir Horarios
-                </a>
+        <div class="grid grid-cols-7 gap-1">
+          <% ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].forEach(dia => { %>
+            <label class="flex flex-col items-center">
+              <input type="checkbox" name="dias[]" value="<%= dia %>" class="peer hidden">
+              <div class="w-full py-2 text-center rounded bg-zinc-800 border border-zinc-700 text-xs peer-checked:bg-orange-600 peer-checked:border-orange-500 transition">
+                <%= dia %>
               </div>
-            </div>
+            </label>
           <% }) %>
         </div>
-      <% }) %>
+
+        <div class="grid grid-cols-2 gap-2">
+          <input type="time" name="inicio_1" required class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
+          <input type="time" name="fin_1" required class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
+          <input type="time" name="inicio_2" class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
+          <input type="time" name="fin_2" class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
+        </div>
+
+        <button type="submit" class="w-full bg-orange-600 py-3 rounded-lg font-bold text-sm shadow-lg">Guardar Horarios</button>
+      </form>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-bold text-white mb-4">Agenda Actual</h2>
+      <div class="space-y-4">
+        <% 
+          // Lógica para agrupar en el mismo archivo
+          const porSucursal = {};
+          barberos.forEach(b => {
+            if (!porSucursal[b.sucursal_nombre]) porSucursal[b.sucursal_nombre] = [];
+            porSucursal[b.sucursal_nombre].push(b);
+          });
+        %>
+
+        <% Object.keys(porSucursal).forEach(sucursal => { %>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <div class="bg-zinc-800 px-4 py-2 text-orange-500 font-bold uppercase text-[10px] tracking-widest">
+              <%= sucursal %>
+            </div>
+            
+            <% porSucursal[sucursal].forEach(barbero => { %>
+              <div id="barbero-<%= barbero.id %>" class="border-t border-zinc-800">
+                <button onclick="toggleBarbero(<%= barbero.id %>)" class="w-full flex justify-between p-4 hover:bg-zinc-800 transition items-center text-sm font-medium">
+                  <%= barbero.nombre %>
+                  <span class="text-zinc-500">⬇️</span>
+                </button>
+                
+                <div class="collapse-content px-4 pb-4 hidden">
+                  <div class="space-y-2">
+                    <% 
+                      const hBarbero = horarios.filter(h => h.barbero_id === barbero.id);
+                      if(hBarbero.length === 0) { %> <p class="text-xs text-zinc-600 italic">Sin horarios.</p> <% }
+                      hBarbero.forEach(h => { 
+                    %>
+                      <div class="flex justify-between items-center bg-zinc-950 p-2.5 rounded text-xs border border-zinc-800">
+                        <span><strong><%= h.dia %>:</strong> <%= h.hora_inicio.substring(0,5) %> - <%= h.hora_fin.substring(0,5) %></span>
+                        <form action="/horarios/eliminar/<%= h.id %>" method="POST">
+                          <button class="text-red-500 px-2">✕</button>
+                        </form>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% }) %>
+      </div>
     </div>
   </div>
 
   <script>
     function toggleBarbero(id) {
-      const container = document.getElementById('barbero-' + id);
-      container.classList.toggle('collapse-open');
+      const el = document.getElementById('barbero-' + id).querySelector('.collapse-content');
+      el.classList.toggle('hidden');
     }
   </script>
 </body>
