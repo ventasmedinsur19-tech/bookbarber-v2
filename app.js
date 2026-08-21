@@ -60,21 +60,19 @@ const upload = multer({
 
   fileFilter: (req, file, cb) => {
 
-    const tiposPermitidos = [
+    const permitidos = [
       'image/jpeg',
       'image/jpg',
       'image/png',
       'image/webp'
     ];
 
-    if (!tiposPermitidos.includes(file.mimetype)) {
-
+    if (!permitidos.includes(file.mimetype)) {
       return cb(
         new Error(
           'Solo se permiten imágenes JPG, PNG o WEBP.'
         )
       );
-
     }
 
     cb(null, true);
@@ -82,7 +80,7 @@ const upload = multer({
 });
 
 // ======================================================
-// FUNCIÓN PARA PROCESAR IMÁGENES
+// IMÁGENES DE SUCURSALES
 // ======================================================
 
 async function guardarImagenSucursal(
@@ -104,18 +102,15 @@ async function guardarImagenSucursal(
     { recursive: true }
   );
 
-
   const nombreArchivo =
     tipo === 'logo'
       ? 'logo.webp'
       : 'local.webp';
 
-
   const rutaFisica = path.join(
     carpeta,
     nombreArchivo
   );
-
 
   if (tipo === 'logo') {
 
@@ -146,15 +141,57 @@ async function guardarImagenSucursal(
         quality: 75
       })
       .toFile(rutaFisica);
-
   }
-
 
   return `/uploads/sucursales/${sucursalId}/${nombreArchivo}`;
 }
 
 // ======================================================
-// MIDDLEWARE DE LOGIN
+// IMÁGENES DE BARBEROS
+// ======================================================
+
+async function guardarImagenBarbero(
+  buffer,
+  barberoId
+) {
+
+  const carpeta = path.join(
+    __dirname,
+    'public',
+    'uploads',
+    'staff',
+    String(barberoId)
+  );
+
+  await fs.promises.mkdir(
+    carpeta,
+    { recursive: true }
+  );
+
+  const rutaFisica = path.join(
+    carpeta,
+    'perfil.webp'
+  );
+
+  await sharp(buffer)
+    .rotate()
+    .resize({
+      width: 600,
+      height: 600,
+      fit: 'cover',
+      position: 'centre',
+      withoutEnlargement: true
+    })
+    .webp({
+      quality: 78
+    })
+    .toFile(rutaFisica);
+
+  return `/uploads/staff/${barberoId}/perfil.webp`;
+}
+
+// ======================================================
+// MIDDLEWARE LOGIN
 // ======================================================
 
 const isAuth = (req, res, next) => {
@@ -167,7 +204,7 @@ const isAuth = (req, res, next) => {
 };
 
 // ======================================================
-// PROTECCIÓN DEL PANEL MASTER
+// PANEL MASTER
 // ======================================================
 
 const isAdmin = (req, res, next) => {
@@ -176,9 +213,7 @@ const isAdmin = (req, res, next) => {
     return next();
   }
 
-
   const key = req.query.key;
-
 
   if (
     process.env.ADMIN_KEY &&
@@ -190,7 +225,6 @@ const isAdmin = (req, res, next) => {
 
     return res.redirect('/admin');
   }
-
 
   return res.status(403).send(
     'Acceso no autorizado al panel administrador.'
@@ -218,7 +252,6 @@ async function obtenerUsuario(userId) {
     : null;
 }
 
-
 async function sucursalPerteneceUsuario(
   sucursalId,
   userId
@@ -240,7 +273,6 @@ async function sucursalPerteneceUsuario(
 
   return rows.length > 0;
 }
-
 
 async function barberoPerteneceUsuario(
   barberoId,
@@ -282,7 +314,6 @@ app.get('/', (req, res) => {
   return res.redirect('/login');
 });
 
-
 app.get('/login', (req, res) => {
 
   if (req.session.userId) {
@@ -294,7 +325,6 @@ app.get('/login', (req, res) => {
   });
 });
 
-
 app.get('/registro', (req, res) => {
 
   if (req.session.userId) {
@@ -304,13 +334,11 @@ app.get('/registro', (req, res) => {
   res.render('registro');
 });
 
-
 app.get('/logout', (req, res) => {
 
   req.session.destroy(() => {
     res.redirect('/login');
   });
-
 });
 
 // ======================================================
@@ -329,7 +357,6 @@ app.get(
           req.session.userId
         );
 
-
       if (!user) {
 
         req.session.destroy(() => {
@@ -338,7 +365,6 @@ app.get(
 
         return;
       }
-
 
       const [sucursales] =
         await db.query(
@@ -350,7 +376,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const fechaReg =
         new Date(user.fecha_registro);
@@ -374,7 +399,6 @@ app.get(
           30 - diasTranscurridos
         );
 
-
       const baseSuscripcion =
         15000;
 
@@ -386,7 +410,6 @@ app.get(
 
       const totalMensual =
         baseSuscripcion + extras;
-
 
       res.render(
         'dashboard',
@@ -414,7 +437,7 @@ app.get(
 );
 
 // ======================================================
-// LINKS DE RESERVA
+// LINKS
 // ======================================================
 
 app.get(
@@ -429,11 +452,9 @@ app.get(
           req.session.userId
         );
 
-
       if (!user) {
         return res.redirect('/logout');
       }
-
 
       const [sucursales] =
         await db.query(
@@ -445,7 +466,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       res.render(
         'links',
@@ -486,7 +506,6 @@ app.get(
           req.session.userId
         );
 
-
       const [sucursales] =
         await db.query(
           `
@@ -497,7 +516,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       res.render(
         'sucursales_gestion',
@@ -521,10 +539,6 @@ app.get(
     }
   }
 );
-
-// ======================================================
-// CREAR SUCURSAL + SUBIR IMÁGENES
-// ======================================================
 
 app.post(
   '/sucursales/guardar',
@@ -550,7 +564,6 @@ app.post(
         direccion
       } = req.body;
 
-
       if (
         !nombre ||
         !nombre.trim()
@@ -560,7 +573,6 @@ app.post(
           'El nombre de la sucursal es obligatorio.'
         );
       }
-
 
       const [resultado] =
         await db.query(
@@ -585,14 +597,11 @@ app.post(
           ]
         );
 
-
       const sucursalId =
         resultado.insertId;
 
-
       let logoUrl = null;
       let fotoUrl = null;
-
 
       if (
         req.files &&
@@ -608,7 +617,6 @@ app.post(
           );
       }
 
-
       if (
         req.files &&
         req.files.foto_local &&
@@ -622,7 +630,6 @@ app.post(
             'local'
           );
       }
-
 
       if (
         logoUrl ||
@@ -649,7 +656,6 @@ app.post(
         );
       }
 
-
       res.redirect('/sucursales');
 
     } catch (error) {
@@ -666,10 +672,6 @@ app.post(
     }
   }
 );
-
-// ======================================================
-// EDITAR SUCURSAL + REEMPLAZAR FOTOS
-// ======================================================
 
 app.post(
   '/sucursales/editar/:id',
@@ -693,13 +695,11 @@ app.post(
       const sucursalId =
         req.params.id;
 
-
       const autorizado =
         await sucursalPerteneceUsuario(
           sucursalId,
           req.session.userId
         );
-
 
       if (!autorizado) {
 
@@ -708,12 +708,10 @@ app.post(
         );
       }
 
-
       const {
         nombre,
         direccion
       } = req.body;
-
 
       const [actuales] =
         await db.query(
@@ -730,7 +728,6 @@ app.post(
           ]
         );
 
-
       if (
         actuales.length === 0
       ) {
@@ -740,13 +737,11 @@ app.post(
         );
       }
 
-
       let logoUrl =
         actuales[0].logo_url;
 
       let fotoUrl =
         actuales[0].foto_url;
-
 
       if (
         req.files &&
@@ -762,7 +757,6 @@ app.post(
           );
       }
 
-
       if (
         req.files &&
         req.files.foto_local &&
@@ -776,7 +770,6 @@ app.post(
             'local'
           );
       }
-
 
       await db.query(
         `
@@ -801,7 +794,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/sucursales');
 
     } catch (error) {
@@ -819,10 +811,6 @@ app.post(
   }
 );
 
-// ======================================================
-// ELIMINAR SUCURSAL
-// ======================================================
-
 app.post(
   '/sucursales/eliminar/:id',
   isAuth,
@@ -833,13 +821,11 @@ app.post(
       const sucursalId =
         req.params.id;
 
-
       const autorizado =
         await sucursalPerteneceUsuario(
           sucursalId,
           req.session.userId
         );
-
 
       if (!autorizado) {
 
@@ -847,7 +833,6 @@ app.post(
           'Sucursal no autorizada.'
         );
       }
-
 
       await db.query(
         `
@@ -861,7 +846,6 @@ app.post(
         ]
       );
 
-
       const carpeta =
         path.join(
           __dirname,
@@ -870,7 +854,6 @@ app.post(
           'sucursales',
           String(sucursalId)
         );
-
 
       try {
 
@@ -885,11 +868,10 @@ app.post(
       } catch (errorCarpeta) {
 
         console.error(
-          'No se pudo borrar carpeta de imágenes:',
+          'No se pudo borrar carpeta:',
           errorCarpeta
         );
       }
-
 
       res.redirect('/sucursales');
 
@@ -924,7 +906,6 @@ app.get(
           req.session.userId
         );
 
-
       const [sucursales] =
         await db.query(
           `
@@ -935,7 +916,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const [barberos] =
         await db.query(
@@ -956,7 +936,6 @@ app.get(
           [req.session.userId]
         );
 
-
       res.render(
         'staff',
         {
@@ -968,7 +947,10 @@ app.get(
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error cargando Staff:',
+        error
+      );
 
       res.status(500).send(
         'Error cargando Staff: ' +
@@ -978,10 +960,14 @@ app.get(
   }
 );
 
+// ======================================================
+// CREAR PROFESIONAL
+// ======================================================
 
 app.post(
   '/staff/guardar',
   isAuth,
+  upload.single('foto'),
   async (req, res) => {
 
     try {
@@ -989,17 +975,14 @@ app.post(
       const {
         sucursal_id,
         nombre,
-        foto_url,
         intervalo_minutos
       } = req.body;
-
 
       const autorizado =
         await sucursalPerteneceUsuario(
           sucursal_id,
           req.session.userId
         );
-
 
       if (!autorizado) {
 
@@ -1008,108 +991,287 @@ app.post(
         );
       }
 
+      if (
+        !nombre ||
+        !nombre.trim()
+      ) {
 
-      await db.query(
-        `
-        INSERT INTO barberos
-        (
-          sucursal_id,
-          nombre,
-          foto_url,
-          intervalo_minutos
+        return res.status(400).send(
+          'El nombre del profesional es obligatorio.'
+        );
+      }
+
+      const intervalosPermitidos = [
+        15,
+        20,
+        30,
+        45,
+        60
+      ];
+
+      let intervalo =
+        Number(intervalo_minutos);
+
+      if (
+        !intervalosPermitidos.includes(
+          intervalo
         )
+      ) {
+        intervalo = 30;
+      }
 
-        VALUES (?, ?, ?, ?)
-        `,
-        [
-          sucursal_id,
-          nombre,
-          foto_url || null,
-          intervalo_minutos || 30
-        ]
-      );
+      const [resultado] =
+        await db.query(
+          `
+          INSERT INTO barberos
+          (
+            sucursal_id,
+            nombre,
+            foto_url,
+            intervalo_minutos
+          )
 
+          VALUES (?, ?, NULL, ?)
+          `,
+          [
+            sucursal_id,
+            nombre.trim(),
+            intervalo
+          ]
+        );
+
+      const barberoId =
+        resultado.insertId;
+
+      if (req.file) {
+
+        const fotoUrl =
+          await guardarImagenBarbero(
+            req.file.buffer,
+            barberoId
+          );
+
+        await db.query(
+          `
+          UPDATE barberos
+          SET foto_url = ?
+          WHERE id = ?
+          `,
+          [
+            fotoUrl,
+            barberoId
+          ]
+        );
+      }
 
       res.redirect('/staff');
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error guardando profesional:',
+        error
+      );
 
       res.status(500).send(
-        'Error guardando barbero: ' +
+        'Error guardando profesional: ' +
         error.message
       );
     }
   }
 );
 
+// ======================================================
+// EDITAR PROFESIONAL
+// ======================================================
 
 app.post(
   '/staff/editar/:id',
   isAuth,
+  upload.single('foto'),
   async (req, res) => {
 
     try {
 
+      const barberoId =
+        req.params.id;
+
       const {
+        sucursal_id,
         nombre,
-        foto_url,
         intervalo_minutos
       } = req.body;
 
+      const barberoAutorizado =
+        await barberoPerteneceUsuario(
+          barberoId,
+          req.session.userId
+        );
+
+      if (!barberoAutorizado) {
+
+        return res.status(403).send(
+          'Profesional no autorizado.'
+        );
+      }
+
+      const sucursalAutorizada =
+        await sucursalPerteneceUsuario(
+          sucursal_id,
+          req.session.userId
+        );
+
+      if (!sucursalAutorizada) {
+
+        return res.status(403).send(
+          'Sucursal no autorizada.'
+        );
+      }
+
+      const [actuales] =
+        await db.query(
+          `
+          SELECT b.*
+          FROM barberos b
+
+          INNER JOIN sucursales s
+            ON b.sucursal_id = s.id
+
+          WHERE b.id = ?
+          AND s.usuario_id = ?
+
+          LIMIT 1
+          `,
+          [
+            barberoId,
+            req.session.userId
+          ]
+        );
+
+      if (
+        actuales.length === 0
+      ) {
+
+        return res.status(404).send(
+          'Profesional no encontrado.'
+        );
+      }
+
+      const intervalosPermitidos = [
+        15,
+        20,
+        30,
+        45,
+        60
+      ];
+
+      let intervalo =
+        Number(intervalo_minutos);
+
+      if (
+        !intervalosPermitidos.includes(
+          intervalo
+        )
+      ) {
+        intervalo = 30;
+      }
+
+      let fotoUrl =
+        actuales[0].foto_url;
+
+      if (req.file) {
+
+        fotoUrl =
+          await guardarImagenBarbero(
+            req.file.buffer,
+            barberoId
+          );
+      }
 
       await db.query(
         `
-        UPDATE barberos b
-
-        INNER JOIN sucursales s
-          ON b.sucursal_id = s.id
+        UPDATE barberos
 
         SET
-          b.nombre = ?,
-          b.foto_url = ?,
-          b.intervalo_minutos = ?
+          sucursal_id = ?,
+          nombre = ?,
+          foto_url = ?,
+          intervalo_minutos = ?
 
-        WHERE b.id = ?
-        AND s.usuario_id = ?
+        WHERE id = ?
         `,
         [
-          nombre,
-          foto_url || null,
-          intervalo_minutos || 30,
-          req.params.id,
-          req.session.userId
+          sucursal_id,
+          nombre.trim(),
+          fotoUrl,
+          intervalo,
+          barberoId
         ]
       );
-
 
       res.redirect('/staff');
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error editando profesional:',
+        error
+      );
 
       res.status(500).send(
-        'Error editando barbero: ' +
+        'Error editando profesional: ' +
         error.message
       );
     }
   }
 );
 
+// ======================================================
+// ELIMINAR PROFESIONAL
+// ======================================================
 
 app.post(
   '/staff/eliminar/:id',
   isAuth,
   async (req, res) => {
 
+    let connection;
+
     try {
 
-      await db.query(
+      const barberoId =
+        req.params.id;
+
+      const autorizado =
+        await barberoPerteneceUsuario(
+          barberoId,
+          req.session.userId
+        );
+
+      if (!autorizado) {
+
+        return res.status(403).send(
+          'Profesional no autorizado.'
+        );
+      }
+
+      connection =
+        await db.getConnection();
+
+      await connection.beginTransaction();
+
+      // horarios no tiene FK con ON DELETE CASCADE
+      await connection.query(
+        `
+        DELETE FROM horarios
+        WHERE barbero_id = ?
+        `,
+        [barberoId]
+      );
+
+      await connection.query(
         `
         DELETE b
-
         FROM barberos b
 
         INNER JOIN sucursales s
@@ -1119,20 +1281,63 @@ app.post(
         AND s.usuario_id = ?
         `,
         [
-          req.params.id,
+          barberoId,
           req.session.userId
         ]
       );
 
+      await connection.commit();
+
+      connection.release();
+      connection = null;
+
+      const carpeta =
+        path.join(
+          __dirname,
+          'public',
+          'uploads',
+          'staff',
+          String(barberoId)
+        );
+
+      try {
+
+        await fs.promises.rm(
+          carpeta,
+          {
+            recursive: true,
+            force: true
+          }
+        );
+
+      } catch (errorCarpeta) {
+
+        console.error(
+          'No se pudo borrar la foto del profesional:',
+          errorCarpeta
+        );
+      }
 
       res.redirect('/staff');
 
     } catch (error) {
 
-      console.error(error);
+      if (connection) {
+
+        try {
+          await connection.rollback();
+        } catch (_) {}
+
+        connection.release();
+      }
+
+      console.error(
+        'Error eliminando profesional:',
+        error
+      );
 
       res.status(500).send(
-        'Error eliminando barbero: ' +
+        'Error eliminando profesional: ' +
         error.message
       );
     }
@@ -1155,7 +1360,6 @@ app.get(
           req.session.userId
         );
 
-
       const [sucursales] =
         await db.query(
           `
@@ -1166,7 +1370,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const [servicios] =
         await db.query(
@@ -1186,7 +1389,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       res.render(
         'servicios_gestion',
@@ -1209,7 +1411,6 @@ app.get(
   }
 );
 
-
 app.post(
   '/servicios/guardar',
   isAuth,
@@ -1223,11 +1424,9 @@ app.post(
         precio
       } = req.body;
 
-
       const duracionMinutos =
         req.body.duracion_minutos ||
         req.body.duracion;
-
 
       const autorizado =
         await sucursalPerteneceUsuario(
@@ -1235,14 +1434,12 @@ app.post(
           req.session.userId
         );
 
-
       if (!autorizado) {
 
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
       }
-
 
       await db.query(
         `
@@ -1264,7 +1461,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/servicios');
 
     } catch (error) {
@@ -1279,7 +1475,6 @@ app.post(
   }
 );
 
-
 app.post(
   '/servicios/editar/:id',
   isAuth,
@@ -1292,11 +1487,9 @@ app.post(
         precio
       } = req.body;
 
-
       const duracionMinutos =
         req.body.duracion_minutos ||
         req.body.duracion;
-
 
       await db.query(
         `
@@ -1322,7 +1515,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/servicios');
 
     } catch (error) {
@@ -1336,7 +1528,6 @@ app.post(
     }
   }
 );
-
 
 app.post(
   '/servicios/eliminar/:id',
@@ -1362,7 +1553,6 @@ app.post(
           req.session.userId
         ]
       );
-
 
       res.redirect('/servicios');
 
@@ -1394,7 +1584,6 @@ app.get(
           req.session.userId
         );
 
-
       const [barberos] =
         await db.query(
           `
@@ -1414,7 +1603,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const [horarios] =
         await db.query(
@@ -1449,7 +1637,6 @@ app.get(
           [req.session.userId]
         );
 
-
       res.render(
         'horarios',
         {
@@ -1471,7 +1658,6 @@ app.get(
   }
 );
 
-
 app.post(
   '/horarios/guardar',
   isAuth,
@@ -1488,13 +1674,11 @@ app.post(
         fin_2
       } = req.body;
 
-
       const autorizado =
         await barberoPerteneceUsuario(
           barbero_id,
           req.session.userId
         );
-
 
       if (!autorizado) {
 
@@ -1503,9 +1687,7 @@ app.post(
         );
       }
 
-
       let diasSeleccionados = [];
-
 
       if (Array.isArray(dias)) {
 
@@ -1518,7 +1700,6 @@ app.post(
           [dias];
       }
 
-
       if (
         diasSeleccionados.length === 0
       ) {
@@ -1527,7 +1708,6 @@ app.post(
           'Debe seleccionar al menos un día.'
         );
       }
-
 
       const mapaDias = {
         Lun: 'Lunes',
@@ -1541,7 +1721,6 @@ app.post(
         Dom: 'Domingo'
       };
 
-
       for (
         const diaSeleccionado
         of diasSeleccionados
@@ -1550,7 +1729,6 @@ app.post(
         const diaCompleto =
           mapaDias[diaSeleccionado] ||
           diaSeleccionado;
-
 
         if (
           inicio_1 &&
@@ -1577,7 +1755,6 @@ app.post(
             ]
           );
         }
-
 
         if (
           inicio_2 &&
@@ -1606,7 +1783,6 @@ app.post(
         }
       }
 
-
       res.redirect('/horarios');
 
     } catch (error) {
@@ -1621,7 +1797,6 @@ app.post(
   }
 );
 
-
 app.post(
   '/horarios/editar/:id',
   isAuth,
@@ -1634,7 +1809,6 @@ app.post(
         hora_inicio,
         hora_fin
       } = req.body;
-
 
       await db.query(
         `
@@ -1663,7 +1837,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/horarios');
 
     } catch (error) {
@@ -1677,7 +1850,6 @@ app.post(
     }
   }
 );
-
 
 app.post(
   '/horarios/eliminar/:id',
@@ -1706,7 +1878,6 @@ app.post(
           req.session.userId
         ]
       );
-
 
       res.redirect('/horarios');
 
@@ -1738,7 +1909,6 @@ app.get(
           req.session.userId
         );
 
-
       const [barberos] =
         await db.query(
           `
@@ -1759,7 +1929,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const [servicios] =
         await db.query(
@@ -1783,7 +1952,6 @@ app.get(
           `,
           [req.session.userId]
         );
-
 
       const [turnos] =
         await db.query(
@@ -1817,7 +1985,6 @@ app.get(
           [req.session.userId]
         );
 
-
       res.render(
         'turnos',
         {
@@ -1840,7 +2007,6 @@ app.get(
   }
 );
 
-
 app.post(
   '/turnos/guardar',
   isAuth,
@@ -1856,7 +2022,6 @@ app.post(
         fecha,
         hora
       } = req.body;
-
 
       const [validacion] =
         await db.query(
@@ -1887,7 +2052,6 @@ app.post(
           ]
         );
 
-
       if (
         validacion.length === 0
       ) {
@@ -1897,15 +2061,12 @@ app.post(
         );
       }
 
-
       if (
         Number(
-          validacion[0]
-            .sucursal_barbero
+          validacion[0].sucursal_barbero
         ) !==
         Number(
-          validacion[0]
-            .sucursal_servicio
+          validacion[0].sucursal_servicio
         )
       ) {
 
@@ -1913,7 +2074,6 @@ app.post(
           'El barbero y el servicio deben pertenecer a la misma sucursal.'
         );
       }
-
 
       await db.query(
         `
@@ -1953,7 +2113,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/turnos');
 
     } catch (error) {
@@ -1968,10 +2127,6 @@ app.post(
   }
 );
 
-// ======================================================
-// ESTADO TURNO
-// ======================================================
-
 app.post(
   '/turnos/estado',
   isAuth,
@@ -1984,10 +2139,8 @@ app.post(
         nuevo_estado
       } = req.body;
 
-
       let estado =
         nuevo_estado;
-
 
       if (
         estado === 'completado' ||
@@ -1995,17 +2148,14 @@ app.post(
         estado === 'finalizado'
       ) {
 
-        estado =
-          'exito';
+        estado = 'exito';
       }
-
 
       const estadosPermitidos = [
         'pendiente',
         'exito',
         'cancelado'
       ];
-
 
       if (
         !estadosPermitidos.includes(
@@ -2017,7 +2167,6 @@ app.post(
           'Estado de turno inválido.'
         );
       }
-
 
       await db.query(
         `
@@ -2041,7 +2190,6 @@ app.post(
         ]
       );
 
-
       res.redirect('/turnos');
 
     } catch (error) {
@@ -2055,10 +2203,6 @@ app.post(
     }
   }
 );
-
-// ======================================================
-// ELIMINAR TURNO
-// ======================================================
 
 app.post(
   '/turnos/eliminar/:id',
@@ -2087,7 +2231,6 @@ app.post(
           req.session.userId
         ]
       );
-
 
       res.redirect('/turnos');
 
@@ -2118,7 +2261,6 @@ app.get(
         await obtenerUsuario(
           req.session.userId
         );
-
 
       const [resultados] =
         await db.query(
@@ -2153,7 +2295,6 @@ app.get(
             ON t.servicio_id = ser.id
 
           WHERE t.estado = 'exito'
-
           AND suc.usuario_id = ?
 
           ORDER BY
@@ -2164,7 +2305,6 @@ app.get(
           [req.session.userId]
         );
 
-
       const sucursales = [
         ...new Set(
           resultados.map(
@@ -2174,13 +2314,11 @@ app.get(
         )
       ];
 
-
       res.render(
         'caja_ranking',
         {
           user,
-          turnosFacturados:
-            resultados,
+          turnosFacturados: resultados,
           sucursales
         }
       );
@@ -2192,7 +2330,6 @@ app.get(
         error
       );
 
-
       res.status(500).send(
         'Error en Caja: ' +
         error.message
@@ -2202,7 +2339,7 @@ app.get(
 );
 
 // ======================================================
-// RUTA PÚBLICA
+// RESERVA PÚBLICA
 // ======================================================
 
 app.get(
@@ -2213,7 +2350,6 @@ app.get(
 
       const sucursalId =
         req.params.id;
-
 
       const [sucursales] =
         await db.query(
@@ -2226,7 +2362,6 @@ app.get(
           [sucursalId]
         );
 
-
       if (
         sucursales.length === 0
       ) {
@@ -2235,7 +2370,6 @@ app.get(
           'Barbería no encontrada.'
         );
       }
-
 
       const [barberos] =
         await db.query(
@@ -2248,7 +2382,6 @@ app.get(
           [sucursalId]
         );
 
-
       const [servicios] =
         await db.query(
           `
@@ -2259,7 +2392,6 @@ app.get(
           `,
           [sucursalId]
         );
-
 
       res.render(
         'reserva_publica',
@@ -2277,7 +2409,6 @@ app.get(
         'Error reserva pública:',
         error
       );
-
 
       res.status(500).send(
         'Error cargando barbería: ' +
@@ -2305,7 +2436,6 @@ app.post(
         nombre_barberia
       } = req.body;
 
-
       if (
         !whatsapp ||
         !password ||
@@ -2317,14 +2447,10 @@ app.post(
         );
       }
 
-
       connection =
         await db.getConnection();
 
-
-      await connection
-        .beginTransaction();
-
+      await connection.beginTransaction();
 
       const [existentes] =
         await connection.query(
@@ -2337,7 +2463,6 @@ app.post(
           [whatsapp]
         );
 
-
       if (
         existentes.length > 0
       ) {
@@ -2345,19 +2470,18 @@ app.post(
         await connection.rollback();
 
         connection.release();
+        connection = null;
 
         return res.status(400).send(
           'Ese WhatsApp ya está registrado.'
         );
       }
 
-
       const hash =
         await bcrypt.hash(
           password,
           10
         );
-
 
       const [resultadoUsuario] =
         await connection.query(
@@ -2376,7 +2500,6 @@ app.post(
           ]
         );
 
-
       await connection.query(
         `
         INSERT INTO sucursales
@@ -2393,15 +2516,13 @@ app.post(
         ]
       );
 
-
       await connection.commit();
 
       connection.release();
-
+      connection = null;
 
       req.session.userId =
         resultadoUsuario.insertId;
-
 
       res.redirect('/dashboard');
 
@@ -2416,12 +2537,10 @@ app.post(
         connection.release();
       }
 
-
       console.error(
         'Error Registro:',
         error
       );
-
 
       res.status(500).send(
         'Error al registrar usuario: ' +
@@ -2446,7 +2565,6 @@ app.post(
         password
       } = req.body;
 
-
       const [usuarios] =
         await db.query(
           `
@@ -2457,7 +2575,6 @@ app.post(
           `,
           [whatsapp]
         );
-
 
       if (
         usuarios.length === 0
@@ -2472,10 +2589,8 @@ app.post(
         );
       }
 
-
       const usuario =
         usuarios[0];
-
 
       if (
         usuario.estado ===
@@ -2491,13 +2606,11 @@ app.post(
         );
       }
 
-
       const passwordCorrecta =
         await bcrypt.compare(
           password,
           usuario.password
         );
-
 
       if (!passwordCorrecta) {
 
@@ -2510,10 +2623,8 @@ app.post(
         );
       }
 
-
       req.session.userId =
         usuario.id;
-
 
       res.redirect('/dashboard');
 
@@ -2524,7 +2635,6 @@ app.post(
         error
       );
 
-
       res.status(500).send(
         'Error iniciando sesión: ' +
         error.message
@@ -2534,7 +2644,7 @@ app.post(
 );
 
 // ======================================================
-// PANEL MASTER
+// ADMIN
 // ======================================================
 
 app.get(
@@ -2571,7 +2681,6 @@ app.get(
           `
         );
 
-
       res.render(
         'admin',
         {
@@ -2586,7 +2695,6 @@ app.get(
         error
       );
 
-
       res.status(500).send(
         'Error cargando panel administrador: ' +
         error.message
@@ -2594,10 +2702,6 @@ app.get(
     }
   }
 );
-
-// ======================================================
-// CAMBIAR ESTADO CLIENTE
-// ======================================================
 
 app.post(
   '/admin/usuarios/:id/estado',
@@ -2613,13 +2717,11 @@ app.post(
         estado
       } = req.body;
 
-
       const estadosPermitidos = [
         'prueba',
         'activo',
         'bloqueado'
       ];
-
 
       if (
         !estadosPermitidos.includes(
@@ -2631,7 +2733,6 @@ app.post(
           'Estado de usuario inválido.'
         );
       }
-
 
       const [resultado] =
         await db.query(
@@ -2646,7 +2747,6 @@ app.post(
           ]
         );
 
-
       if (
         resultado.affectedRows === 0
       ) {
@@ -2655,7 +2755,6 @@ app.post(
           'Usuario no encontrado.'
         );
       }
-
 
       res.redirect('/admin');
 
@@ -2666,7 +2765,6 @@ app.post(
         error
       );
 
-
       res.status(500).send(
         'Error actualizando usuario: ' +
         error.message
@@ -2674,10 +2772,6 @@ app.post(
     }
   }
 );
-
-// ======================================================
-// LOGOUT ADMIN
-// ======================================================
 
 app.get(
   '/admin/logout',
@@ -2690,7 +2784,7 @@ app.get(
 );
 
 // ======================================================
-// ERROR DE MULTER
+// ERRORES DE SUBIDA
 // ======================================================
 
 app.use(
@@ -2717,7 +2811,6 @@ app.use(
       );
     }
 
-
     if (
       error &&
       error.message &&
@@ -2730,7 +2823,6 @@ app.use(
         error.message
       );
     }
-
 
     next(error);
   }
@@ -2755,7 +2847,6 @@ app.use(
 
 const PORT =
   process.env.PORT || 3000;
-
 
 app.listen(
   PORT,
