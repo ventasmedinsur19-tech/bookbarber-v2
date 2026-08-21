@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Links - BookBarber</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { background-color: #121214; color: #e1e1e6; }
+  </style>
+</head>
+<body class="p-4 min-h-screen font-sans">
+
+  <div class="max-w-md mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-white">Mis Links</h1>
+        <button onclick="toggleInfoModal()" class="w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-orange-500 font-bold text-sm flex items-center justify-center transition">
+          i
+        </button>
+      </div>
+      <a href="/dashboard" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300 font-medium rounded-lg transition border border-zinc-700">
+        ← Volver
+      </a>
+    </div>
+
+    <!-- Modal de Información -->
+    <div id="infoModal" class="hidden bg-zinc-900 border border-orange-500/30 rounded-xl p-4 shadow-xl">
+      <div class="flex justify-between items-start mb-2">
+        <h3 class="text-orange-500 font-bold flex items-center gap-2">💡 ¿Qué hacer en esta sección?</h3>
+        <button onclick="toggleInfoModal()" class="text-zinc-400 hover:text-white font-bold">✕</button>
+      </div>
+      <p class="text-sm text-zinc-300 leading-relaxed">
+        Acá están los links públicos de tu barbería. Copiá el enlace de la sucursal que quieras y pegalo en la biografía de tu Instagram, en tus estados de WhatsApp o envíaselo directamente a tus clientes para que agenden su turno.
+      </p>
+    </div>
+
+    <!-- Listado de Links -->
+    <div class="space-y-4">
+      <% if (sucursales.length === 0) { %>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center shadow-lg">
+          <i class="fas fa-store-slash text-4xl text-zinc-600 mb-3"></i>
+          <p class="text-zinc-400 text-sm">No tenés sucursales creadas.</p>
+          <p class="text-xs text-zinc-500 mt-1">Creá una sucursal primero para generar tu link de reservas.</p>
+          <a href="/sucursales" class="mt-4 inline-block bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Ir a Sucursales</a>
+        </div>
+      <% } else { %>
+        
+        <% sucursales.forEach(suc => { %>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-lg">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+                <i class="fas fa-link"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base"><%= suc.nombre %></h3>
+                <p class="text-zinc-500 text-xs"><%= suc.direccion %></p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <!-- El input con el link (solo lectura) -->
+              <input type="text" id="link-<%= suc.id %>" value="https://bookbarber.online/b/<%= suc.id %>" readonly class="w-full bg-zinc-950 border border-zinc-700 text-zinc-300 text-sm rounded-lg p-3 outline-none select-all text-center">
+              
+              <!-- Botón Copiar -->
+              <button onclick="copiarLink('<%= suc.id %>')" id="btn-<%= suc.id %>" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-lg transition flex justify-center items-center gap-2 border border-zinc-700 text-sm">
+                <i class="far fa-copy"></i> <span>Copiar Enlace</span>
+              </button>
+              
+              <!-- Botón Probar Link -->
+              <a href="/b/<%= suc.id %>" target="_blank" class="w-full text-center text-xs text-orange-500 font-bold mt-2 hover:underline">
+                Abrir vista pública <i class="fas fa-external-link-alt ml-1"></i>
+              </a>
+            </div>
+          </div>
+        <% }) %>
+        
+      <% } %>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleInfoModal() {
+      document.getElementById('infoModal').classList.toggle('hidden');
+    }
+
+    function copiarLink(id) {
+      const linkInput = document.getElementById('link-' + id);
+      const btn = document.getElementById('btn-' + id);
+      const span = btn.querySelector('span');
+      const icon = btn.querySelector('i');
+
+      // Seleccionar y copiar el texto
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999); // Para celulares
+      navigator.clipboard.writeText(linkInput.value).then(() => {
+        // Feedback visual
+        btn.classList.remove('bg-zinc-800', 'border-zinc-700');
+        btn.classList.add('bg-green-600', 'border-green-500');
+        span.innerText = "¡Copiado!";
+        icon.classList.remove('fa-copy', 'far');
+        icon.classList.add('fa-check', 'fas');
+
+        // Volver a la normalidad después de 2 segundos
+        setTimeout(() => {
+          btn.classList.add('bg-zinc-800', 'border-zinc-700');
+          btn.classList.remove('bg-green-600', 'border-green-500');
+          span.innerText = "Copiar Enlace";
+          icon.classList.add('fa-copy', 'far');
+          icon.classList.remove('fa-check', 'fas');
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
+
