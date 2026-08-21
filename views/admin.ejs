@@ -1,120 +1,835 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Master - MedinSur Dev</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Control Maestro | BookBarber</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  >
+
   <style>
-    body { background-color: #09090b; color: #e4e4e7; }
+
+    body {
+      background-color: #09090b;
+      color: #e4e4e7;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
   </style>
+
 </head>
-<body class="p-4 md:p-8 font-sans min-h-screen">
 
-  <div class="max-w-6xl mx-auto space-y-6">
-    
-    <!-- Header MedinSur Dev -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-800 pb-6">
+
+<body class="min-h-screen font-sans">
+
+  <main class="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header
+      class="flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-zinc-800 pb-6"
+    >
+
       <div>
-        <h1 class="text-3xl font-black text-white tracking-tight">Control Maestro</h1>
-        <p class="text-orange-500 font-bold text-sm tracking-widest uppercase mt-1">BookBarber | by MedinSur Dev</p>
-      </div>
-      <div class="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-lg flex items-center gap-2">
-        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-        <span class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Sistema En Línea</span>
-      </div>
-    </div>
 
-    <% 
-      // Cálculos globales para el panel
-      let ingresosProyectados = 0;
+        <h1
+          class="text-2xl md:text-3xl font-black text-white tracking-tight"
+        >
+          Control Maestro
+        </h1>
+
+        <p
+          class="text-orange-500 font-black text-[10px] md:text-xs tracking-widest uppercase mt-1"
+        >
+          BookBarber | by MedinSur Dev
+        </p>
+
+      </div>
+
+
+      <div class="flex items-center gap-3">
+
+        <div
+          class="bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-xl flex items-center gap-2"
+        >
+
+          <div
+            class="w-2 h-2 rounded-full bg-green-500 animate-pulse"
+          ></div>
+
+          <span
+            class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest"
+          >
+            Sistema en línea
+          </span>
+
+        </div>
+
+
+        <a
+          href="/admin/logout"
+          class="w-10 h-10 bg-zinc-900 hover:bg-red-950 border border-zinc-800 hover:border-red-900 rounded-xl flex items-center justify-center text-zinc-500 hover:text-red-500 transition"
+          title="Cerrar sesión administrador"
+        >
+
+          <i class="fas fa-right-from-bracket"></i>
+
+        </a>
+
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CÁLCULOS
+    ====================================================== -->
+
+    <%
+
       let totalSucursalesGlobal = 0;
 
+      let clientesActivos = 0;
+      let clientesPrueba = 0;
+      let clientesBloqueados = 0;
+
+      let ingresosActivos = 0;
+      let ingresosPotenciales = 0;
+
+
       usuarios.forEach(u => {
+
+        const cantidadSucursales =
+          Number(u.total_sucursales || 0);
+
         const base = 15000;
-        const extras = Math.max(0, u.total_sucursales - 1) * 5000;
-        ingresosProyectados += (base + extras);
-        totalSucursalesGlobal += u.total_sucursales;
+
+        const extras =
+          Math.max(
+            0,
+            cantidadSucursales - 1
+          ) * 5000;
+
+        const cuota =
+          base + extras;
+
+
+        totalSucursalesGlobal +=
+          cantidadSucursales;
+
+
+        ingresosPotenciales += cuota;
+
+
+        if (u.estado === 'activo') {
+
+          clientesActivos++;
+
+          ingresosActivos += cuota;
+
+        } else if (u.estado === 'bloqueado') {
+
+          clientesBloqueados++;
+
+        } else {
+
+          clientesPrueba++;
+
+        }
+
       });
+
     %>
 
-    <!-- Métricas Generales (Kpis) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg border-l-4 border-l-blue-500">
-        <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Total Clientes</p>
-        <p class="text-3xl font-black text-white"><%= usuarios.length %></p>
-      </div>
-      <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg border-l-4 border-l-purple-500">
-        <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Sucursales Activas</p>
-        <p class="text-3xl font-black text-white"><%= totalSucursalesGlobal %></p>
-      </div>
-      <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg border-l-4 border-l-green-500">
-        <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Recaudación Mensual Proyectada</p>
-        <p class="text-3xl font-black text-green-400">$<%= ingresosProyectados.toLocaleString('es-AR') %></p>
-      </div>
-    </div>
 
-    <!-- Lista de Barberías Registradas -->
-    <div>
-      <h2 class="text-lg font-bold text-white mb-4">Base de Datos de Clientes</h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <% if (usuarios.length === 0) { %>
-          <p class="text-zinc-500 text-sm">No hay clientes registrados todavía.</p>
-        <% } %>
+    <!-- =====================================================
+         KPI
+    ====================================================== -->
 
-        <% usuarios.forEach(u => { 
-            const fechaReg = new Date(u.fecha_registro);
-            const diasTranscurridos = Math.floor((new Date() - fechaReg) / (1000 * 60 * 60 * 24));
-            const diasRestantes = Math.max(0, 30 - diasTranscurridos);
-            const cuotaMensual = 15000 + (Math.max(0, u.total_sucursales - 1) * 5000);
+    <section
+      class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6"
+    >
+
+      <!-- CLIENTES -->
+
+      <div
+        class="bg-zinc-900 border border-zinc-800 border-l-4 border-l-blue-500 p-4 md:p-5 rounded-xl shadow-lg"
+      >
+
+        <p
+          class="text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mb-2"
+        >
+          Clientes
+        </p>
+
+        <p
+          class="text-2xl md:text-3xl font-black text-white"
+        >
+          <%= usuarios.length %>
+        </p>
+
+      </div>
+
+
+      <!-- SUCURSALES -->
+
+      <div
+        class="bg-zinc-900 border border-zinc-800 border-l-4 border-l-purple-500 p-4 md:p-5 rounded-xl shadow-lg"
+      >
+
+        <p
+          class="text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mb-2"
+        >
+          Sucursales
+        </p>
+
+        <p
+          class="text-2xl md:text-3xl font-black text-white"
+        >
+          <%= totalSucursalesGlobal %>
+        </p>
+
+      </div>
+
+
+      <!-- CLIENTES ACTIVOS -->
+
+      <div
+        class="bg-zinc-900 border border-zinc-800 border-l-4 border-l-orange-500 p-4 md:p-5 rounded-xl shadow-lg"
+      >
+
+        <p
+          class="text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mb-2"
+        >
+          Suscripciones Activas
+        </p>
+
+        <p
+          class="text-2xl md:text-3xl font-black text-orange-400"
+        >
+          <%= clientesActivos %>
+        </p>
+
+      </div>
+
+
+      <!-- INGRESOS -->
+
+      <div
+        class="bg-zinc-900 border border-zinc-800 border-l-4 border-l-green-500 p-4 md:p-5 rounded-xl shadow-lg"
+      >
+
+        <p
+          class="text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mb-2"
+        >
+          Ingreso Mensual Activo
+        </p>
+
+        <p
+          class="text-xl md:text-3xl font-black text-green-400"
+        >
+          $<%= ingresosActivos.toLocaleString('es-AR') %>
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         RESUMEN ESTADOS
+    ====================================================== -->
+
+    <section
+      class="flex flex-wrap gap-2 mt-4"
+    >
+
+      <div
+        class="bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg px-3 py-2 text-xs font-bold"
+      >
+
+        <i class="fas fa-clock mr-1"></i>
+
+        En prueba:
+        <%= clientesPrueba %>
+
+      </div>
+
+
+      <div
+        class="bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg px-3 py-2 text-xs font-bold"
+      >
+
+        <i class="fas fa-circle-check mr-1"></i>
+
+        Activos:
+        <%= clientesActivos %>
+
+      </div>
+
+
+      <div
+        class="bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg px-3 py-2 text-xs font-bold"
+      >
+
+        <i class="fas fa-ban mr-1"></i>
+
+        Bloqueados:
+        <%= clientesBloqueados %>
+
+      </div>
+
+
+      <div
+        class="bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-lg px-3 py-2 text-xs font-bold"
+      >
+
+        Potencial:
+        <span class="text-white">
+          $<%= ingresosPotenciales.toLocaleString('es-AR') %>/mes
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         CLIENTES
+    ====================================================== -->
+
+    <section class="mt-8">
+
+      <div
+        class="flex items-center justify-between gap-4 mb-4"
+      >
+
+        <div>
+
+          <h2
+            class="text-lg md:text-xl font-black text-white"
+          >
+            Base de Datos de Clientes
+          </h2>
+
+          <p
+            class="text-zinc-600 text-xs mt-1"
+          >
+            Administración de cuentas y suscripciones.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <% if (!usuarios || usuarios.length === 0) { %>
+
+        <div
+          class="bg-zinc-900 border border-zinc-800 rounded-xl p-10 text-center"
+        >
+
+          <i
+            class="fas fa-users text-3xl text-zinc-700 mb-3"
+          ></i>
+
+          <p class="text-zinc-500">
+            No hay clientes registrados.
+          </p>
+
+        </div>
+
+      <% } %>
+
+
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+      >
+
+
+        <% usuarios.forEach(u => {
+
+          const fechaReg =
+            new Date(u.fecha_registro);
+
+          const ahora =
+            new Date();
+
+          const diasTranscurridos =
+            Math.floor(
+              (ahora - fechaReg) /
+              (1000 * 60 * 60 * 24)
+            );
+
+          const diasRestantes =
+            Math.max(
+              0,
+              30 - diasTranscurridos
+            );
+
+
+          const cantidadSucursales =
+            Number(u.total_sucursales || 0);
+
+
+          const cuotaMensual =
+            15000 +
+            (
+              Math.max(
+                0,
+                cantidadSucursales - 1
+              ) * 5000
+            );
+
+
+          let estadoTexto = '';
+          let estadoClase = '';
+          let barraClase = '';
+          let estadoIcono = '';
+
+
+          if (u.estado === 'activo') {
+
+            estadoTexto =
+              'Suscripción activa';
+
+            estadoClase =
+              'text-green-400';
+
+            barraClase =
+              'bg-green-500';
+
+            estadoIcono =
+              'fa-circle-check';
+
+
+          } else if (
+            u.estado === 'bloqueado'
+          ) {
+
+            estadoTexto =
+              'Cuenta bloqueada';
+
+            estadoClase =
+              'text-red-400';
+
+            barraClase =
+              'bg-red-500';
+
+            estadoIcono =
+              'fa-ban';
+
+
+          } else if (
+            diasRestantes > 0
+          ) {
+
+            estadoTexto =
+              `Prueba · ${diasRestantes} días`;
+
+            estadoClase =
+              'text-blue-400';
+
+            barraClase =
+              'bg-blue-500';
+
+            estadoIcono =
+              'fa-clock';
+
+
+          } else {
+
+            estadoTexto =
+              'Prueba finalizada';
+
+            estadoClase =
+              'text-orange-400';
+
+            barraClase =
+              'bg-orange-500';
+
+            estadoIcono =
+              'fa-hourglass-end';
+
+          }
+
         %>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-            <!-- Barra de estado arriba -->
-            <div class="absolute top-0 left-0 w-full h-1 <%= diasRestantes > 0 ? 'bg-green-500' : 'bg-red-500' %>"></div>
-            
-            <div class="flex justify-between items-start mb-4 mt-1">
-              <div>
-                <h3 class="font-bold text-white text-lg"><%= u.barberia_principal || 'Sin Nombre' %></h3>
-                <p class="text-xs text-zinc-500 font-mono mt-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i> <%= u.whatsapp %></p>
+
+
+          <!-- =================================================
+               TARJETA CLIENTE
+          ================================================== -->
+
+          <article
+            class="relative bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden"
+          >
+
+            <!-- Línea de estado -->
+
+            <div
+              class="absolute top-0 left-0 w-full h-1 <%= barraClase %>"
+            ></div>
+
+
+            <div class="p-5">
+
+              <!-- CABECERA -->
+
+              <div
+                class="flex justify-between items-start gap-3 mt-1 mb-5"
+              >
+
+                <div class="min-w-0">
+
+                  <h3
+                    class="font-black text-white text-lg truncate"
+                  >
+                    <%= u.barberia_principal || 'Sin nombre' %>
+                  </h3>
+
+
+                  <p
+                    class="text-xs text-zinc-500 font-mono mt-1"
+                  >
+
+                    <i
+                      class="fab fa-whatsapp text-green-500 mr-1"
+                    ></i>
+
+                    <%= u.whatsapp %>
+
+                  </p>
+
+                </div>
+
+
+                <span
+                  class="shrink-0 bg-black border border-zinc-800 text-zinc-500 text-[9px] px-2 py-1 rounded-md font-black"
+                >
+                  ID <%= u.id %>
+                </span>
+
               </div>
-              <span class="bg-zinc-950 border border-zinc-800 text-zinc-300 text-[10px] px-2 py-1 rounded font-bold">
-                ID: <%= u.id %>
-              </span>
+
+
+              <!-- ESTADO PRINCIPAL -->
+
+              <div
+                class="bg-black/50 border border-zinc-800 rounded-xl p-3 mb-4"
+              >
+
+                <p
+                  class="text-[9px] uppercase tracking-widest text-zinc-600 font-bold mb-1"
+                >
+                  Estado de la cuenta
+                </p>
+
+
+                <p
+                  class="font-black text-sm <%= estadoClase %>"
+                >
+
+                  <i
+                    class="fas <%= estadoIcono %> mr-1"
+                  ></i>
+
+                  <%= estadoTexto %>
+
+                </p>
+
+              </div>
+
+
+              <!-- DATOS -->
+
+              <div class="space-y-2 mb-5">
+
+
+                <div
+                  class="flex justify-between items-center bg-black/40 border border-zinc-800/70 p-2.5 rounded-lg"
+                >
+
+                  <span
+                    class="text-xs text-zinc-500"
+                  >
+                    Sucursales
+                  </span>
+
+                  <span
+                    class="text-xs font-black text-white"
+                  >
+                    <%= cantidadSucursales %>
+                  </span>
+
+                </div>
+
+
+                <div
+                  class="flex justify-between items-center bg-black/40 border border-zinc-800/70 p-2.5 rounded-lg"
+                >
+
+                  <span
+                    class="text-xs text-zinc-500"
+                  >
+                    Registrado
+                  </span>
+
+                  <span
+                    class="text-xs font-bold text-zinc-300"
+                  >
+                    <%= fechaReg.toLocaleDateString('es-AR') %>
+                  </span>
+
+                </div>
+
+
+                <div
+                  class="flex justify-between items-center bg-black/40 border border-zinc-800/70 p-2.5 rounded-lg"
+                >
+
+                  <span
+                    class="text-xs text-zinc-500"
+                  >
+                    Cuota mensual
+                  </span>
+
+                  <span
+                    class="text-sm font-black text-orange-400"
+                  >
+                    $<%= cuotaMensual.toLocaleString('es-AR') %>
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <!-- =================================================
+                   CONTROLES
+              ================================================== -->
+
+              <div class="mb-3">
+
+                <p
+                  class="text-[9px] uppercase tracking-widest font-black text-zinc-600 mb-2"
+                >
+                  Cambiar estado
+                </p>
+
+
+                <div class="grid grid-cols-3 gap-2">
+
+
+                  <!-- PRUEBA -->
+
+                  <form
+                    action="/admin/usuarios/<%= u.id %>/estado"
+                    method="POST"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="estado"
+                      value="prueba"
+                    >
+
+                    <button
+                      type="submit"
+                      onclick="return confirmarEstado('prueba', '<%= u.barberia_principal || 'este cliente' %>')"
+                      class="w-full py-2.5 rounded-lg text-[10px] font-black transition
+                      <%= u.estado === 'prueba'
+                          ? 'bg-blue-500 text-white border border-blue-400'
+                          : 'bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20'
+                      %>"
+                    >
+
+                      <i class="fas fa-clock block mb-1"></i>
+
+                      PRUEBA
+
+                    </button>
+
+                  </form>
+
+
+                  <!-- ACTIVO -->
+
+                  <form
+                    action="/admin/usuarios/<%= u.id %>/estado"
+                    method="POST"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="estado"
+                      value="activo"
+                    >
+
+                    <button
+                      type="submit"
+                      onclick="return confirmarEstado('activo', '<%= u.barberia_principal || 'este cliente' %>')"
+                      class="w-full py-2.5 rounded-lg text-[10px] font-black transition
+                      <%= u.estado === 'activo'
+                          ? 'bg-green-500 text-white border border-green-400'
+                          : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'
+                      %>"
+                    >
+
+                      <i class="fas fa-check block mb-1"></i>
+
+                      ACTIVO
+
+                    </button>
+
+                  </form>
+
+
+                  <!-- BLOQUEADO -->
+
+                  <form
+                    action="/admin/usuarios/<%= u.id %>/estado"
+                    method="POST"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="estado"
+                      value="bloqueado"
+                    >
+
+                    <button
+                      type="submit"
+                      onclick="return confirmarEstado('bloqueado', '<%= u.barberia_principal || 'este cliente' %>')"
+                      class="w-full py-2.5 rounded-lg text-[10px] font-black transition
+                      <%= u.estado === 'bloqueado'
+                          ? 'bg-red-600 text-white border border-red-500'
+                          : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+                      %>"
+                    >
+
+                      <i class="fas fa-ban block mb-1"></i>
+
+                      BLOQUEAR
+
+                    </button>
+
+                  </form>
+
+                </div>
+
+              </div>
+
+
+              <!-- WHATSAPP -->
+
+              <a
+                href="https://wa.me/<%= u.whatsapp %>?text=Hola!%20Nos%20comunicamos%20desde%20BookBarber."
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-4 flex w-full items-center justify-center gap-2 bg-green-600/10 hover:bg-green-600/20 border border-green-600/30 text-green-500 py-2.5 rounded-xl text-xs font-black transition"
+              >
+
+                <i class="fab fa-whatsapp"></i>
+
+                Contactar cliente
+
+              </a>
+
             </div>
 
-            <div class="space-y-2 mb-4 text-sm text-zinc-400">
-              <div class="flex justify-between bg-zinc-950 p-2 rounded">
-                <span>Sucursales creadas:</span>
-                <span class="font-bold text-white"><%= u.total_sucursales %></span>
-              </div>
-              <div class="flex justify-between bg-zinc-950 p-2 rounded">
-                <span>Estado actual:</span>
-                <% if (diasRestantes > 0) { %>
-                  <span class="font-bold text-green-400">Prueba (<%= diasRestantes %> días)</span>
-                <% } else { %>
-                  <span class="font-bold text-red-400">Prueba Finalizada</span>
-                <% } %>
-              </div>
-              <div class="flex justify-between bg-zinc-950 p-2 rounded">
-                <span>Cuota a cobrar:</span>
-                <span class="font-bold text-orange-400">$<%= cuotaMensual.toLocaleString('es-AR') %></span>
-              </div>
-            </div>
+          </article>
 
-            <!-- Botón de Contacto -->
-            <a href="https://wa.me/<%= u.whatsapp %>?text=Hola!%20Nos%20comunicamos%20desde%20BookBarber%20(MedinSur%20Dev)." target="_blank" class="block w-full bg-green-600/10 hover:bg-green-600/20 border border-green-600/30 text-green-500 text-center py-2 rounded-lg text-sm font-bold transition">
-              <i class="fab fa-whatsapp mr-1"></i> Contactar Cliente
-            </a>
-          </div>
-        <% }) %>
+
+        <% }); %>
+
       </div>
-    </div>
 
-    <footer class="mt-12 border-t border-zinc-800 pt-6 text-center text-zinc-500 text-xs font-medium">
-      <p>&copy; <%= new Date().getFullYear() %> MedinSur Dev. Todos los derechos reservados.</p>
+    </section>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer
+      class="mt-12 border-t border-zinc-800 pt-6 text-center"
+    >
+
+      <p
+        class="text-zinc-600 text-[10px] font-medium"
+      >
+        © <%= new Date().getFullYear() %>
+        MedinSur Dev · BookBarber
+      </p>
+
     </footer>
-  </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       CONFIRMACIÓN
+  ====================================================== -->
+
+  <script>
+
+    function confirmarEstado(
+      estado,
+      negocio
+    ) {
+
+      let mensaje = '';
+
+
+      if (estado === 'activo') {
+
+        mensaje =
+          '¿Activar la suscripción de ' +
+          negocio +
+          '?';
+
+      } else if (
+        estado === 'bloqueado'
+      ) {
+
+        mensaje =
+          '¿Bloquear la cuenta de ' +
+          negocio +
+          '?';
+
+      } else {
+
+        mensaje =
+          '¿Cambiar ' +
+          negocio +
+          ' al estado de prueba?';
+
+      }
+
+
+      return confirm(mensaje);
+
+    }
+
+  </script>
+
 </body>
+
 </html>
