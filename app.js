@@ -358,6 +358,21 @@ app.get('/caja', isAuth, async (req, res) => {
   }
 });
 
+// --- MIS LINKS DE RESERVA ---
+app.get('/links', isAuth, async (req, res) => {
+  try {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE id = ?', [req.session.userId]);
+    const [sucursales] = await db.query('SELECT * FROM sucursales WHERE usuario_id = ?', [req.session.userId]);
+    
+    res.render('links', { 
+      user: user[0], 
+      sucursales 
+    });
+  } catch (e) { 
+    res.status(500).send("Error al cargar los links: " + e.message); 
+  }
+});
+
 // --- RUTA PÚBLICA DE RESERVA ---
 app.get('/b/:id', async (req, res) => {
   try {
