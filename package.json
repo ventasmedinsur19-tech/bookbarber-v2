@@ -13,7 +13,9 @@
     "ejs": "^3.1.10",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
-    "mysql2": "^3.9.7"
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.9.7",
+    "sharp": "^0.33.5"
   },
   "author": "MedinSur Dev",
   "license": "ISC"
