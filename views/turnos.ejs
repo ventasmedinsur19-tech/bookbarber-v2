@@ -1,344 +1,1203 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Turnos - BookBarber</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Turnos | BookBarber</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  >
+
   <style>
-    /* Estilos base alineados al Panel V2 */
     body {
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #121212;
-      color: #e0e0e0;
-      margin: 0;
-      padding: 15px;
-    }
-    .container { max-width: 800px; margin: 0 auto; }
-    
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      border-bottom: 1px solid #2d2d2d;
-      padding-bottom: 15px;
-    }
-    header h1 { font-size: 1.5rem; color: #ffffff; margin: 0; }
-    .btn-back {
-      background-color: #262626;
-      color: #ff7a00;
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      border: 1px solid #ff7a00;
-      transition: 0.2s;
+      background-color: #0a0a0a;
+      color: #e5e5e5;
     }
 
-    /* Switcher de Tiempo (Hoy vs Futuros) */
-    .time-switcher {
-      display: flex;
-      background: #1e1e1e;
-      border-radius: 8px;
-      padding: 4px;
-      margin-bottom: 20px;
-    }
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: #a0a0a0;
-      padding: 12px;
-      font-weight: bold;
-      font-size: 0.95rem;
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: center;
-    }
-    .tab-btn.active {
-      background: #ff7a00;
-      color: #ffffff;
+    * {
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Contenedores de Bloques de Barberías y Barberos */
-    .section-barberia {
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 25px;
-      border-left: 4px solid #ff7a00;
-    }
-    .section-barberia h2 {
-      margin: 0 0 15px 0;
-      font-size: 1.2rem;
-      color: #ffffff;
+    input[type="date"],
+    input[type="time"] {
+      color-scheme: dark;
     }
 
-    .barbero-group {
-      background: #222222;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
-    }
-    .barbero-header {
-      font-weight: bold;
-      color: #ff7a00;
-      font-size: 1rem;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    /* Tarjetas de Turnos (Sin tablas, ideal para celular) */
-    .turno-card {
-      background: #2d2d2d;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      border: 1px solid #3d3d3d;
-    }
-    .turno-main-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .turno-hora {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #ffffff;
-      background: #3a3a3a;
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-    .turno-fecha-futura {
-      font-size: 0.8rem;
-      color: #ff7a00;
-      margin-top: 2px;
-    }
-    .cliente-name {
-      font-weight: 600;
-      color: #ffffff;
-      font-size: 1rem;
-    }
-    .servicio-tag {
-      font-size: 0.9rem;
-      color: #cccccc;
-    }
-    .price-tag {
-      color: #2ecc71;
-      font-weight: bold;
-    }
-
-    /* Enlace Whatsapp */
-    .wa-container { margin-top: 2px; }
-    .wa-link {
-      color: #25d366;
-      text-decoration: none;
-      font-size: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Acciones de Estado de Turno */
-    .turno-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      border-top: 1px solid #3d3d3d;
-      padding-top: 8px;
-      margin-top: 4px;
-    }
-    .btn-action {
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      font-weight: bold;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-    .btn-success { background: #27ae60; color: white; }
-    .btn-cancel { background: #c0392b; color: white; }
-    
-    .status-finalizado {
-      font-size: 0.85rem;
-      color: #777777;
-      font-style: italic;
-    }
-
-    /* Clases útiles para el filtrado dinámico */
-    .hidden { display: none !important; }
-    .no-turnos-msg {
-      text-align: center;
-      color: #777777;
-      padding: 20px;
-      font-style: italic;
+    .tab-activo {
+      background: #ea580c;
+      color: white;
+      border-color: #f97316;
     }
   </style>
 </head>
-<body>
 
-<div class="container">
-  <header>
-    <h1>📅 Gestión de Turnos</h1>
-    <a href="/dashboard" class="btn-back">← Dashboard</a>
-  </header>
+<body class="min-h-screen font-sans">
 
-  <div class="time-switcher">
-    <button class="tab-btn active" onclick="switchView('hoy')">Turnos de Hoy</button>
-    <button class="tab-btn" onclick="switchView('futuros')">Turnos Futuros</button>
-  </div>
+  <main
+    class="max-w-7xl mx-auto px-4 py-6 md:px-8 md:py-10"
+  >
 
-  <% 
-    // Lógica EJS para agrupar los datos que vienen sueltos del backend
-    // Agrupamos dinámicamente por Barbería y luego por Barbero
-    let estructura = {};
-    
-    // Conseguir fecha de hoy en formato local YYYY-MM-DD sin desfase
-    let hoyStr = new Date().toISOString().split('T')[0];
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
-    turnos.forEach(t => {
-      let bNombre = t.sucursal_nombre || "Barbería General";
-      let barbNombre = t.barbero_nombre || "Sin Asignar";
-      
-      // Determinar si es hoy o futuro
-      let tFechaStr = new Date(t.fecha).toISOString().split('T')[0];
-      let esHoy = (tFechaStr === hoyStr);
+    <header
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
+    >
 
-      if (!estructura[bNombre]) estructura[bNombre] = {};
-      if (!estructura[bNombre][barbNombre]) estructura[bNombre][barbNombre] = [];
-      
-      // Guardamos la info extendida
-      estructura[bNombre][barbNombre].push({
-        id: t.id,
-        cliente_nombre: t.cliente_nombre,
-        cliente_whatsapp: t.cliente_whatsapp,
-        servicio_nombre: t.servicio_nombre,
-        precio: t.precio,
-        hora: t.hora.substring(0, 5),
-        fechaFormateada: new Date(t.fecha).toLocaleDateString('es-ES', {timeZone: 'UTC'}),
-        estado: t.estado,
-        esHoy: esHoy
-      });
-    });
-  %>
+      <div>
 
-  <div id="turnos-contenedor">
-    <% if (Object.keys(estructura).length === 0) { %>
-      <div class="no-turnos-msg">No hay turnos registrados en el sistema.</div>
-    <% } else { %>
-      
-      <% Object.keys(estructura).forEach(barberia => { %>
-        <div class="section-barberia" data-barberia="<%= barberia %>">
-          <h2>🏢 <%= barberia %></h2>
+        <div class="flex items-center gap-2">
 
-          <% Object.keys(estructura[barberia]).forEach(barbero => { %>
-            <div class="barbero-group" data-barbero="<%= barbero %>">
-              <div class="barbero-header">💈 Barbero: <%= barbero %></div>
-              
-              <div class="cards-lista">
-                <% estructura[barberia][barbero].forEach(turno => { %>
-                  
-                  <div class="turno-card <%= turno.esHoy ? 'view-hoy' : 'view-futuros hidden' %>" data-estado="<%= turno.estado %>">
-                    <div class="turno-main-info">
-                      <div>
-                        <div class="cliente-name"><%= turno.cliente_nombre %></div>
-                        <div class="wa-container">
-                          <a href="https://wa.me/<%= turno.cliente_whatsapp %>" target="_blank" class="wa-link">
-                            💬 WhatsApp
-                          </a>
-                        </div>
-                      </div>
-                      <div style="text-align: right;">
-                        <div class="turno-hora"><%= turno.hora %> hs</div>
-                        <% if (!turno.esHoy) { %>
-                          <div class="turno-fecha-futura">📅 <%= turno.fechaFormateada %></div>
-                        <% } %>
-                      </div>
-                    </div>
+          <h1
+            class="text-2xl md:text-3xl font-black text-white"
+          >
+            Turnos
+          </h1>
 
-                    <div class="servicio-tag">
-                      ✂️ <%= turno.servicio_nombre %> — <span class="price-tag">$<%= turno.precio %></span>
-                    </div>
-
-                    <div class="turno-footer">
-                      <% if (turno.estado === 'pendiente') { %>
-                        <form action="/turnos/estado" method="POST" style="margin:0;">
-                          <input type="hidden" name="turno_id" value="<%= turno.id %>">
-                          <input type="hidden" name="nuevo_estado" value="completado">
-                          <button type="submit" class="btn-action btn-success">Éxito ✓</button>
-                        </form>
-                        <form action="/turnos/estado" method="POST" style="margin:0;">
-                          <input type="hidden" name="turno_id" value="<%= turno.id %>">
-                          <input type="hidden" name="nuevo_estado" value="cancelado">
-                          <button type="submit" class="btn-action btn-cancel">Cancelar ✕</button>
-                        </form>
-                      <% } else { %>
-                        <span class="status-finalizado">Estado: <%= turno.estado.toUpperCase() %></span>
-                      <% } %>
-                    </div>
-                  </div>
-
-                <% }) %>
-              </div>
-            </div>
-          <% }) %>
+          <button
+            type="button"
+            onclick="toggleInfoModal()"
+            class="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-orange-500 font-black text-sm flex items-center justify-center transition"
+          >
+            i
+          </button>
 
         </div>
-      <% }) %>
+
+        <p
+          class="text-xs md:text-sm text-zinc-500 mt-1"
+        >
+          Administrá las reservas y el trabajo diario de tu equipo.
+        </p>
+
+      </div>
+
+      <a
+        href="/dashboard"
+        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-sm text-zinc-300 font-bold rounded-xl transition border border-zinc-800"
+      >
+
+        <i class="fas fa-arrow-left"></i>
+
+        Volver al Dashboard
+
+      </a>
+
+    </header>
+
+
+    <!-- =====================================================
+         MENSAJES
+    ====================================================== -->
+
+    <% if (error) { %>
+
+      <div
+        class="mb-5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 text-sm font-bold flex items-start gap-3"
+      >
+        <i class="fas fa-circle-exclamation mt-0.5"></i>
+        <span><%= error %></span>
+      </div>
 
     <% } %>
-  </div>
-</div>
 
-<script>
-  // Script frontal ultra-liviano para cambiar entre Hoy y Futuros al vuelo
-  function switchView(tipo) {
-    // Alternar botones activos
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if (tipo === 'hoy') {
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.querySelectorAll('.view-hoy').forEach(el => el.classList.remove('hidden'));
-      document.querySelectorAll('.view-futuros').forEach(el => el.classList.add('hidden'));
-    } else {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
-      document.querySelectorAll('.view-hoy').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.view-futuros').forEach(el => el.classList.remove('hidden'));
+
+    <% if (ok) { %>
+
+      <div
+        class="mb-5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-4 text-sm font-bold flex items-start gap-3"
+      >
+        <i class="fas fa-circle-check mt-0.5"></i>
+        <span><%= ok %></span>
+      </div>
+
+    <% } %>
+
+
+    <!-- =====================================================
+         INFO
+    ====================================================== -->
+
+    <section
+      id="infoModal"
+      class="hidden mb-6 bg-zinc-900 border border-orange-500/30 rounded-2xl p-5"
+    >
+
+      <div class="flex justify-between items-start gap-4">
+
+        <div>
+
+          <h3 class="text-orange-500 font-black mb-2">
+            <i class="fas fa-circle-info mr-1"></i>
+            ¿Cómo funcionan los turnos?
+          </h3>
+
+          <p class="text-sm text-zinc-300 leading-relaxed">
+            Podés cargar turnos manualmente desde este panel.
+            BookBarber controla el horario laboral del profesional,
+            la duración del servicio y los turnos ya ocupados para
+            evitar superposiciones.
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          onclick="toggleInfoModal()"
+          class="text-zinc-500 hover:text-white"
+        >
+          <i class="fas fa-xmark"></i>
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         GRID PRINCIPAL
+    ====================================================== -->
+
+    <div class="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-6">
+
+      <!-- =================================================
+           NUEVO TURNO
+      ================================================== -->
+
+      <section
+        class="bg-zinc-900 border border-zinc-800 p-5 md:p-6 rounded-2xl shadow-lg h-fit"
+      >
+
+        <div class="flex items-center gap-3 mb-5">
+
+          <div
+            class="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500"
+          >
+            <i class="fas fa-calendar-plus"></i>
+          </div>
+
+          <div>
+            <h2 class="text-lg font-black text-white">
+              Nuevo Turno
+            </h2>
+
+            <p class="text-xs text-zinc-500">
+              Cargá una reserva manual.
+            </p>
+          </div>
+
+        </div>
+
+
+        <% if (!barberos || barberos.length === 0) { %>
+
+          <div
+            class="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4"
+          >
+            <p class="text-sm text-orange-400 font-bold">
+              Primero necesitás registrar profesionales.
+            </p>
+
+            <a
+              href="/staff"
+              class="inline-block mt-3 text-xs font-black text-white underline"
+            >
+              Ir a Staff
+            </a>
+          </div>
+
+        <% } else if (!servicios || servicios.length === 0) { %>
+
+          <div
+            class="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4"
+          >
+            <p class="text-sm text-orange-400 font-bold">
+              Primero necesitás crear servicios.
+            </p>
+
+            <a
+              href="/servicios"
+              class="inline-block mt-3 text-xs font-black text-white underline"
+            >
+              Ir a Servicios
+            </a>
+          </div>
+
+        <% } else { %>
+
+          <form
+            action="/turnos/guardar"
+            method="POST"
+            class="space-y-4"
+            onsubmit="return validarFormularioTurno()"
+          >
+
+            <!-- PROFESIONAL -->
+
+            <div>
+              <label
+                class="block text-xs font-bold text-zinc-400 mb-1.5"
+              >
+                Profesional
+              </label>
+
+              <select
+                id="barberoSelect"
+                name="barbero_id"
+                required
+                onchange="filtrarServicios()"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+              >
+                <option value="" selected disabled>
+                  Seleccionar profesional
+                </option>
+
+                <% barberos.forEach(b => { %>
+                  <option
+                    value="<%= b.id %>"
+                    data-sucursal="<%= b.sucursal_id %>"
+                  >
+                    <%= b.nombre %> · <%= b.sucursal_nombre %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+
+            <!-- SERVICIO -->
+
+            <div>
+              <label
+                class="block text-xs font-bold text-zinc-400 mb-1.5"
+              >
+                Servicio
+              </label>
+
+              <select
+                id="servicioSelect"
+                name="servicio_id"
+                required
+                disabled
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500 disabled:opacity-50"
+              >
+                <option value="" selected disabled>
+                  Primero seleccioná un profesional
+                </option>
+
+                <% servicios.forEach(s => { %>
+                  <option
+                    value="<%= s.id %>"
+                    data-sucursal="<%= s.sucursal_id %>"
+                    data-duracion="<%= s.duracion_minutos || 30 %>"
+                    data-precio="<%= s.precio || 0 %>"
+                    class="servicio-option"
+                  >
+                    <%= s.nombre %>
+                    · <%= s.duracion_minutos || 30 %> min
+                    · $<%= Number(s.precio || 0).toLocaleString('es-AR') %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+
+            <!-- CLIENTE -->
+
+            <div>
+              <label
+                class="block text-xs font-bold text-zinc-400 mb-1.5"
+              >
+                Nombre del Cliente
+              </label>
+
+              <input
+                type="text"
+                name="cliente_nombre"
+                maxlength="120"
+                required
+                placeholder="Ej: Juan Pérez"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white placeholder-zinc-600 text-sm focus:outline-none focus:border-orange-500"
+              >
+            </div>
+
+
+            <!-- WHATSAPP -->
+
+            <div>
+              <label
+                class="block text-xs font-bold text-zinc-400 mb-1.5"
+              >
+                WhatsApp
+                <span class="text-zinc-600 font-normal">
+                  (opcional)
+                </span>
+              </label>
+
+              <input
+                type="tel"
+                name="cliente_whatsapp"
+                inputmode="numeric"
+                placeholder="Ej: 3511234567"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white placeholder-zinc-600 text-sm focus:outline-none focus:border-orange-500"
+              >
+            </div>
+
+
+            <!-- FECHA / HORA -->
+
+            <div class="grid grid-cols-2 gap-3">
+
+              <div>
+                <label
+                  class="block text-xs font-bold text-zinc-400 mb-1.5"
+                >
+                  Fecha
+                </label>
+
+                <input
+                  type="date"
+                  id="fechaTurno"
+                  name="fecha"
+                  min="<%= hoy %>"
+                  required
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+                >
+              </div>
+
+
+              <div>
+                <label
+                  class="block text-xs font-bold text-zinc-400 mb-1.5"
+                >
+                  Hora
+                </label>
+
+                <input
+                  type="time"
+                  id="horaTurno"
+                  name="hora"
+                  required
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+                >
+              </div>
+
+            </div>
+
+
+            <!-- RESUMEN -->
+
+            <div
+              id="resumenServicio"
+              class="hidden bg-blue-500/5 border border-blue-500/10 rounded-xl p-3"
+            >
+              <p
+                id="resumenServicioTexto"
+                class="text-[10px] text-blue-400"
+              ></p>
+            </div>
+
+
+            <div
+              class="bg-orange-500/5 border border-orange-500/10 rounded-xl p-3"
+            >
+              <p class="text-[10px] text-orange-400 leading-relaxed">
+                <i class="fas fa-shield-halved mr-1"></i>
+                El sistema verificará horarios y disponibilidad
+                antes de crear la reserva.
+              </p>
+            </div>
+
+
+            <button
+              type="submit"
+              class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 rounded-xl transition text-sm"
+            >
+              <i class="fas fa-calendar-check mr-2"></i>
+              Crear Turno
+            </button>
+
+          </form>
+
+        <% } %>
+
+      </section>
+
+
+      <!-- =================================================
+           LISTADO
+      ================================================== -->
+
+      <section>
+
+        <!-- TABS -->
+
+        <div
+          class="grid grid-cols-3 bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-5"
+        >
+
+          <button
+            id="tabHoy"
+            type="button"
+            onclick="switchView('hoy')"
+            class="tab-btn tab-activo border border-transparent rounded-lg px-2 py-2.5 text-xs font-black transition"
+          >
+            Hoy
+          </button>
+
+          <button
+            id="tabFuturos"
+            type="button"
+            onclick="switchView('futuros')"
+            class="tab-btn border border-transparent rounded-lg px-2 py-2.5 text-xs font-black text-zinc-500 transition"
+          >
+            Próximos
+          </button>
+
+          <button
+            id="tabAnteriores"
+            type="button"
+            onclick="switchView('anteriores')"
+            class="tab-btn border border-transparent rounded-lg px-2 py-2.5 text-xs font-black text-zinc-500 transition"
+          >
+            Anteriores
+          </button>
+
+        </div>
+
+
+        <%
+          const fechaHoy = hoy;
+          const estructura = {};
+
+          turnos.forEach(t => {
+            let fechaTurno = '';
+
+            if (t.fecha instanceof Date) {
+              fechaTurno = [
+                t.fecha.getFullYear(),
+                String(t.fecha.getMonth() + 1).padStart(2, '0'),
+                String(t.fecha.getDate()).padStart(2, '0')
+              ].join('-');
+            } else {
+              fechaTurno = String(t.fecha || '').substring(0, 10);
+            }
+
+            let segmento = 'hoy';
+
+            if (fechaTurno > fechaHoy) {
+              segmento = 'futuros';
+            } else if (fechaTurno < fechaHoy) {
+              segmento = 'anteriores';
+            }
+
+            const sucursalNombre =
+              t.sucursal_nombre || 'Sucursal';
+
+            const barberoNombre =
+              t.barbero_nombre || 'Profesional';
+
+            if (!estructura[sucursalNombre]) {
+              estructura[sucursalNombre] = {};
+            }
+
+            if (!estructura[sucursalNombre][barberoNombre]) {
+              estructura[sucursalNombre][barberoNombre] = [];
+            }
+
+            estructura[sucursalNombre][barberoNombre].push({
+              id: t.id,
+              cliente_nombre: t.cliente_nombre,
+              cliente_whatsapp: t.cliente_whatsapp,
+              servicio_nombre: t.servicio_nombre,
+              precio: Number(t.precio || 0),
+              duracion: Number(t.duracion_minutos || 30),
+              hora: String(t.hora || '').substring(0, 5),
+              fecha: fechaTurno,
+              estado: t.estado,
+              segmento
+            });
+          });
+
+          function fechaBonita(fecha) {
+            const partes = String(fecha).split('-');
+
+            if (partes.length !== 3) {
+              return fecha;
+            }
+
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+          }
+        %>
+
+
+        <% if (!turnos || turnos.length === 0) { %>
+
+          <div
+            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center"
+          >
+            <div
+              class="w-16 h-16 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-4"
+            >
+              <i class="fas fa-calendar-xmark text-2xl text-zinc-600"></i>
+            </div>
+
+            <p class="text-zinc-500 text-sm">
+              No hay turnos registrados todavía.
+            </p>
+          </div>
+
+        <% } else { %>
+
+          <div id="turnosContenedor" class="space-y-5">
+
+            <% Object.keys(estructura).forEach(sucursal => { %>
+
+              <article
+                class="grupo-sucursal bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden"
+              >
+
+                <div
+                  class="bg-zinc-800/70 border-b border-zinc-800 px-4 py-3 flex items-center gap-2"
+                >
+                  <i class="fas fa-store text-orange-500 text-xs"></i>
+
+                  <span
+                    class="text-[10px] font-black uppercase tracking-widest text-orange-400"
+                  >
+                    <%= sucursal %>
+                  </span>
+                </div>
+
+
+                <% Object.keys(estructura[sucursal]).forEach(barbero => { %>
+
+                  <div
+                    class="grupo-barbero border-b last:border-b-0 border-zinc-800 p-4"
+                  >
+
+                    <div class="flex items-center gap-3 mb-3">
+
+                      <div
+                        class="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500"
+                      >
+                        <i class="fas fa-user text-xs"></i>
+                      </div>
+
+                      <div>
+                        <p class="text-sm font-black text-white">
+                          <%= barbero %>
+                        </p>
+
+                        <p class="text-[10px] text-zinc-600">
+                          Agenda del profesional
+                        </p>
+                      </div>
+
+                    </div>
+
+
+                    <div class="space-y-3">
+
+                      <% estructura[sucursal][barbero].forEach(turno => {
+
+                        let estadoTexto = 'Pendiente';
+                        let estadoClases =
+                          'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+
+                        if (turno.estado === 'exito') {
+                          estadoTexto = 'Realizado';
+                          estadoClases =
+                            'text-green-400 bg-green-500/10 border-green-500/20';
+                        }
+
+                        if (turno.estado === 'cancelado') {
+                          estadoTexto = 'Cancelado';
+                          estadoClases =
+                            'text-red-400 bg-red-500/10 border-red-500/20';
+                        }
+
+                      %>
+
+                        <div
+                          class="turno-card segmento-<%= turno.segmento %> bg-zinc-950 border border-zinc-800 rounded-xl p-4"
+                          data-segmento="<%= turno.segmento %>"
+                        >
+
+                          <div
+                            class="flex items-start justify-between gap-3"
+                          >
+
+                            <div class="min-w-0">
+
+                              <div class="flex items-center gap-2 flex-wrap">
+
+                                <h3
+                                  class="font-black text-white text-base"
+                                >
+                                  <%= turno.cliente_nombre %>
+                                </h3>
+
+                                <span
+                                  class="inline-flex border rounded-md px-2 py-0.5 text-[9px] font-black uppercase <%= estadoClases %>"
+                                >
+                                  <%= estadoTexto %>
+                                </span>
+
+                              </div>
+
+
+                              <p
+                                class="text-xs text-zinc-400 mt-2"
+                              >
+                                <i class="fas fa-scissors text-orange-500 mr-1"></i>
+                                <%= turno.servicio_nombre %>
+
+                                ·
+
+                                <span class="text-white font-bold">
+                                  <%= turno.duracion %> min
+                                </span>
+                              </p>
+
+
+                              <p
+                                class="text-sm text-green-400 font-black mt-1"
+                              >
+                                $<%= turno.precio.toLocaleString('es-AR') %>
+                              </p>
+
+
+                              <% if (turno.cliente_whatsapp) { %>
+
+                                <a
+                                  href="https://wa.me/<%= String(turno.cliente_whatsapp).replace(/\D/g, '') %>"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="inline-flex items-center gap-1.5 mt-3 text-xs text-green-500 font-bold hover:text-green-400"
+                                >
+                                  <i class="fab fa-whatsapp"></i>
+                                  WhatsApp
+                                </a>
+
+                              <% } %>
+
+                            </div>
+
+
+                            <div class="text-right shrink-0">
+
+                              <p
+                                class="inline-flex items-center bg-zinc-800 border border-zinc-700 text-white font-black rounded-lg px-2.5 py-1.5 text-sm"
+                              >
+                                <%= turno.hora %>
+                              </p>
+
+                              <p
+                                class="text-[10px] text-zinc-500 mt-2"
+                              >
+                                <i class="far fa-calendar mr-1"></i>
+                                <%= fechaBonita(turno.fecha) %>
+                              </p>
+
+                            </div>
+
+                          </div>
+
+
+                          <!-- ACCIONES -->
+
+                          <div
+                            class="mt-4 pt-3 border-t border-zinc-800 flex flex-wrap items-center justify-end gap-2"
+                          >
+
+                            <% if (turno.estado === 'pendiente') { %>
+
+                              <form
+                                action="/turnos/estado"
+                                method="POST"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="turno_id"
+                                  value="<%= turno.id %>"
+                                >
+
+                                <input
+                                  type="hidden"
+                                  name="nuevo_estado"
+                                  value="exito"
+                                >
+
+                                <button
+                                  type="submit"
+                                  class="bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 px-3 py-2 rounded-lg text-[10px] font-black"
+                                >
+                                  <i class="fas fa-check mr-1"></i>
+                                  ÉXITO
+                                </button>
+                              </form>
+
+
+                              <form
+                                action="/turnos/estado"
+                                method="POST"
+                                onsubmit="return confirm('¿Cancelar este turno? El horario volverá a quedar disponible.');"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="turno_id"
+                                  value="<%= turno.id %>"
+                                >
+
+                                <input
+                                  type="hidden"
+                                  name="nuevo_estado"
+                                  value="cancelado"
+                                >
+
+                                <button
+                                  type="submit"
+                                  class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-3 py-2 rounded-lg text-[10px] font-black"
+                                >
+                                  <i class="fas fa-ban mr-1"></i>
+                                  CANCELAR
+                                </button>
+                              </form>
+
+                            <% } %>
+
+
+                            <form
+                              action="/turnos/eliminar/<%= turno.id %>"
+                              method="POST"
+                              onsubmit="return confirm('¿Eliminar definitivamente este turno?');"
+                            >
+                              <button
+                                type="submit"
+                                class="bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-red-400 px-3 py-2 rounded-lg text-[10px] font-black"
+                              >
+                                <i class="fas fa-trash"></i>
+                              </button>
+                            </form>
+
+                          </div>
+
+                        </div>
+
+                      <% }); %>
+
+                    </div>
+
+                  </div>
+
+                <% }); %>
+
+              </article>
+
+            <% }); %>
+
+          </div>
+
+
+          <!-- MENSAJE CUANDO TAB NO TIENE TURNOS -->
+
+          <div
+            id="sinTurnosSegmento"
+            class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center"
+          >
+            <i
+              class="fas fa-calendar-day text-3xl text-zinc-700 mb-3"
+            ></i>
+
+            <p
+              id="sinTurnosTexto"
+              class="text-sm text-zinc-500"
+            >
+            </p>
+          </div>
+
+        <% } %>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer
+      class="mt-12 pt-6 border-t border-zinc-900 text-center text-[10px] text-zinc-600"
+    >
+      © <%= new Date().getFullYear() %>
+      MedinSur Dev · BookBarber
+    </footer>
+
+  </main>
+
+
+  <script>
+
+    function toggleInfoModal() {
+      document
+        .getElementById('infoModal')
+        .classList.toggle('hidden');
     }
-    chequearBloquesVacios();
-  }
 
-  // Oculta visualmente los títulos de barberos o barberías si no tienen turnos en el segmento elegido
-  function chequearBloquesVacios() {
-    document.querySelectorAll('.barbero-group').forEach(grupo => {
-      const visibles = grupo.querySelectorAll('.turno-card:not(.hidden)').length;
-      if (visibles === 0) {
-        grupo.classList.add('hidden');
-      } else {
-        grupo.classList.remove('hidden');
+
+    function filtrarServicios() {
+
+      const barberoSelect =
+        document.getElementById('barberoSelect');
+
+      const servicioSelect =
+        document.getElementById('servicioSelect');
+
+      const seleccion =
+        barberoSelect.options[
+          barberoSelect.selectedIndex
+        ];
+
+      const sucursalId =
+        seleccion
+          ? seleccion.dataset.sucursal
+          : null;
+
+
+      servicioSelect.disabled = false;
+      servicioSelect.value = '';
+
+
+      Array.from(
+        servicioSelect.options
+      ).forEach(option => {
+
+        if (!option.value) {
+          option.hidden = false;
+          option.textContent =
+            'Seleccionar servicio';
+          return;
+        }
+
+        option.hidden =
+          option.dataset.sucursal !== sucursalId;
+
+      });
+
+
+      actualizarResumenServicio();
+    }
+
+
+    function actualizarResumenServicio() {
+
+      const servicioSelect =
+        document.getElementById(
+          'servicioSelect'
+        );
+
+      const contenedor =
+        document.getElementById(
+          'resumenServicio'
+        );
+
+      const texto =
+        document.getElementById(
+          'resumenServicioTexto'
+        );
+
+
+      if (
+        !servicioSelect ||
+        !servicioSelect.value
+      ) {
+
+        if (contenedor) {
+          contenedor.classList.add(
+            'hidden'
+          );
+        }
+
+        return;
       }
-    });
 
-    document.querySelectorAll('.section-barberia').forEach(barberia => {
-      const visibles = barberia.querySelectorAll('.barbero-group:not(.hidden)').length;
-      if (visibles === 0) {
-        barberia.classList.add('hidden');
-      } else {
-        barberia.classList.remove('hidden');
+
+      const option =
+        servicioSelect.options[
+          servicioSelect.selectedIndex
+        ];
+
+
+      const duracion =
+        option.dataset.duracion || '30';
+
+
+      const precio =
+        Number(
+          option.dataset.precio || 0
+        );
+
+
+      texto.textContent =
+        `Este servicio ocupará ${duracion} minutos y tiene un valor de $${precio.toLocaleString('es-AR')}.`;
+
+
+      contenedor.classList.remove(
+        'hidden'
+      );
+    }
+
+
+    const servicioSelect =
+      document.getElementById(
+        'servicioSelect'
+      );
+
+
+    if (servicioSelect) {
+
+      servicioSelect.addEventListener(
+        'change',
+        actualizarResumenServicio
+      );
+
+    }
+
+
+    function validarFormularioTurno() {
+
+      const barbero =
+        document.getElementById(
+          'barberoSelect'
+        );
+
+
+      const servicio =
+        document.getElementById(
+          'servicioSelect'
+        );
+
+
+      const fecha =
+        document.getElementById(
+          'fechaTurno'
+        );
+
+
+      const hora =
+        document.getElementById(
+          'horaTurno'
+        );
+
+
+      if (
+        !barbero.value ||
+        !servicio.value ||
+        !fecha.value ||
+        !hora.value
+      ) {
+
+        alert(
+          'Completá profesional, servicio, fecha y hora.'
+        );
+
+        return false;
       }
-    });
-  }
 
-  // Ejecución inicial para limpiar la UI al cargar
-  window.addEventListener('DOMContentLoaded', () => {
-    switchView('hoy');
-  });
-</script>
+
+      return true;
+    }
+
+
+    function switchView(tipo) {
+
+      document
+        .querySelectorAll('.tab-btn')
+        .forEach(btn => {
+
+          btn.classList.remove(
+            'tab-activo'
+          );
+
+          btn.classList.add(
+            'text-zinc-500'
+          );
+
+        });
+
+
+      const tab =
+        tipo === 'hoy'
+          ? document.getElementById(
+              'tabHoy'
+            )
+          : tipo === 'futuros'
+            ? document.getElementById(
+                'tabFuturos'
+              )
+            : document.getElementById(
+                'tabAnteriores'
+              );
+
+
+      if (tab) {
+
+        tab.classList.add(
+          'tab-activo'
+        );
+
+        tab.classList.remove(
+          'text-zinc-500'
+        );
+
+      }
+
+
+      document
+        .querySelectorAll(
+          '.turno-card'
+        )
+        .forEach(card => {
+
+          const mostrar =
+            card.dataset.segmento ===
+            tipo;
+
+
+          card.classList.toggle(
+            'hidden',
+            !mostrar
+          );
+
+        });
+
+
+      document
+        .querySelectorAll(
+          '.grupo-barbero'
+        )
+        .forEach(grupo => {
+
+          const visibles =
+            grupo.querySelectorAll(
+              '.turno-card:not(.hidden)'
+            ).length;
+
+
+          grupo.classList.toggle(
+            'hidden',
+            visibles === 0
+          );
+
+        });
+
+
+      document
+        .querySelectorAll(
+          '.grupo-sucursal'
+        )
+        .forEach(grupo => {
+
+          const visibles =
+            grupo.querySelectorAll(
+              '.grupo-barbero:not(.hidden)'
+            ).length;
+
+
+          grupo.classList.toggle(
+            'hidden',
+            visibles === 0
+          );
+
+        });
+
+
+      const totalVisibles =
+        document.querySelectorAll(
+          '.turno-card:not(.hidden)'
+        ).length;
+
+
+      const mensaje =
+        document.getElementById(
+          'sinTurnosSegmento'
+        );
+
+
+      const texto =
+        document.getElementById(
+          'sinTurnosTexto'
+        );
+
+
+      if (
+        mensaje &&
+        texto
+      ) {
+
+        if (totalVisibles === 0) {
+
+          mensaje.classList.remove(
+            'hidden'
+          );
+
+
+          texto.textContent =
+            tipo === 'hoy'
+              ? 'No hay turnos para hoy.'
+              : tipo === 'futuros'
+                ? 'No hay próximos turnos.'
+                : 'No hay turnos anteriores.';
+
+        } else {
+
+          mensaje.classList.add(
+            'hidden'
+          );
+
+        }
+
+      }
+
+    }
+
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      function() {
+
+        const fecha =
+          document.getElementById(
+            'fechaTurno'
+          );
+
+        if (
+          fecha &&
+          !fecha.value
+        ) {
+          fecha.value =
+            '<%= hoy %>';
+        }
+
+        switchView('hoy');
+
+      }
+    );
+
+  </script>
 
 </body>
 </html>
+
