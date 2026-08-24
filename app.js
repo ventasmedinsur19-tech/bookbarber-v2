@@ -16,9 +16,7 @@ const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
 app.set('view engine', 'ejs');
-
 app.use(express.static('public'));
 
 app.use(session({
@@ -60,13 +58,10 @@ const PRECIO_SUCURSAL_EXTRA = 5000;
 
 const upload = multer({
   storage: multer.memoryStorage(),
-
   limits: {
     fileSize: 8 * 1024 * 1024
   },
-
   fileFilter: (req, file, cb) => {
-
     const permitidos = [
       'image/jpeg',
       'image/jpg',
@@ -76,9 +71,7 @@ const upload = multer({
 
     if (!permitidos.includes(file.mimetype)) {
       return cb(
-        new Error(
-          'Solo se permiten imágenes JPG, PNG o WEBP.'
-        )
+        new Error('Solo se permiten imágenes JPG, PNG o WEBP.')
       );
     }
 
@@ -87,15 +80,10 @@ const upload = multer({
 });
 
 // ======================================================
-// IMÁGENES DE SUCURSALES
+// FUNCIONES DE IMÁGENES
 // ======================================================
 
-async function guardarImagenSucursal(
-  buffer,
-  sucursalId,
-  tipo
-) {
-
+async function guardarImagenSucursal(buffer, sucursalId, tipo) {
   const carpeta = path.join(
     __dirname,
     'public',
@@ -104,23 +92,14 @@ async function guardarImagenSucursal(
     String(sucursalId)
   );
 
-  await fs.promises.mkdir(
-    carpeta,
-    { recursive: true }
-  );
+  await fs.promises.mkdir(carpeta, { recursive: true });
 
   const nombreArchivo =
-    tipo === 'logo'
-      ? 'logo.webp'
-      : 'local.webp';
+    tipo === 'logo' ? 'logo.webp' : 'local.webp';
 
-  const rutaFisica = path.join(
-    carpeta,
-    nombreArchivo
-  );
+  const rutaFisica = path.join(carpeta, nombreArchivo);
 
   if (tipo === 'logo') {
-
     await sharp(buffer)
       .rotate()
       .resize({
@@ -129,13 +108,9 @@ async function guardarImagenSucursal(
         fit: 'inside',
         withoutEnlargement: true
       })
-      .webp({
-        quality: 75
-      })
+      .webp({ quality: 75 })
       .toFile(rutaFisica);
-
   } else {
-
     await sharp(buffer)
       .rotate()
       .resize({
@@ -144,24 +119,14 @@ async function guardarImagenSucursal(
         fit: 'inside',
         withoutEnlargement: true
       })
-      .webp({
-        quality: 75
-      })
+      .webp({ quality: 75 })
       .toFile(rutaFisica);
   }
 
   return `/uploads/sucursales/${sucursalId}/${nombreArchivo}`;
 }
 
-// ======================================================
-// IMÁGENES DE BARBEROS
-// ======================================================
-
-async function guardarImagenBarbero(
-  buffer,
-  barberoId
-) {
-
+async function guardarImagenBarbero(buffer, barberoId) {
   const carpeta = path.join(
     __dirname,
     'public',
@@ -170,15 +135,9 @@ async function guardarImagenBarbero(
     String(barberoId)
   );
 
-  await fs.promises.mkdir(
-    carpeta,
-    { recursive: true }
-  );
+  await fs.promises.mkdir(carpeta, { recursive: true });
 
-  const rutaFisica = path.join(
-    carpeta,
-    'perfil.webp'
-  );
+  const rutaFisica = path.join(carpeta, 'perfil.webp');
 
   await sharp(buffer)
     .rotate()
@@ -189,20 +148,17 @@ async function guardarImagenBarbero(
       position: 'centre',
       withoutEnlargement: true
     })
-    .webp({
-      quality: 78
-    })
+    .webp({ quality: 78 })
     .toFile(rutaFisica);
 
   return `/uploads/staff/${barberoId}/perfil.webp`;
 }
 
 // ======================================================
-// MIDDLEWARE LOGIN
+// MIDDLEWARES
 // ======================================================
 
 const isAuth = (req, res, next) => {
-
   if (req.session.userId) {
     return next();
   }
@@ -210,12 +166,7 @@ const isAuth = (req, res, next) => {
   return res.redirect('/login');
 };
 
-// ======================================================
-// PANEL MASTER
-// ======================================================
-
 const isAdmin = (req, res, next) => {
-
   if (req.session.isAdmin) {
     return next();
   }
@@ -227,9 +178,7 @@ const isAdmin = (req, res, next) => {
     key &&
     key === process.env.ADMIN_KEY
   ) {
-
     req.session.isAdmin = true;
-
     return res.redirect('/admin');
   }
 
@@ -243,7 +192,6 @@ const isAdmin = (req, res, next) => {
 // ======================================================
 
 async function obtenerUsuario(userId) {
-
   const [usuarios] = await db.query(
     `
     SELECT *
@@ -254,16 +202,10 @@ async function obtenerUsuario(userId) {
     [userId]
   );
 
-  return usuarios.length > 0
-    ? usuarios[0]
-    : null;
+  return usuarios.length > 0 ? usuarios[0] : null;
 }
 
-async function sucursalPerteneceUsuario(
-  sucursalId,
-  userId
-) {
-
+async function sucursalPerteneceUsuario(sucursalId, userId) {
   const [rows] = await db.query(
     `
     SELECT id
@@ -272,37 +214,24 @@ async function sucursalPerteneceUsuario(
     AND usuario_id = ?
     LIMIT 1
     `,
-    [
-      sucursalId,
-      userId
-    ]
+    [sucursalId, userId]
   );
 
   return rows.length > 0;
 }
 
-async function barberoPerteneceUsuario(
-  barberoId,
-  userId
-) {
-
+async function barberoPerteneceUsuario(barberoId, userId) {
   const [rows] = await db.query(
     `
     SELECT b.id
     FROM barberos b
-
     INNER JOIN sucursales s
       ON b.sucursal_id = s.id
-
     WHERE b.id = ?
     AND s.usuario_id = ?
-
     LIMIT 1
     `,
-    [
-      barberoId,
-      userId
-    ]
+    [barberoId, userId]
   );
 
   return rows.length > 0;
@@ -335,28 +264,21 @@ const MAPA_DIAS = {
 };
 
 function normalizarDia(dia) {
-
-  const diaCompleto =
-    MAPA_DIAS[dia] || dia;
-
+  const diaCompleto = MAPA_DIAS[dia] || dia;
   return DIAS_VALIDOS.includes(diaCompleto)
     ? diaCompleto
     : null;
 }
 
 function horaValida(hora) {
-
-  if (!hora) {
-    return false;
-  }
+  if (!hora) return false;
 
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(
-    hora.substring(0, 5)
+    String(hora).substring(0, 5)
   );
 }
 
 function rangoValido(inicio, fin) {
-
   if (
     !horaValida(inicio) ||
     !horaValida(fin)
@@ -364,21 +286,14 @@ function rangoValido(inicio, fin) {
     return false;
   }
 
-  return inicio.substring(0, 5) <
-         fin.substring(0, 5);
+  return (
+    String(inicio).substring(0, 5) <
+    String(fin).substring(0, 5)
+  );
 }
 
-function rangosSeSuperponen(
-  inicioA,
-  finA,
-  inicioB,
-  finB
-) {
-
-  return (
-    inicioA < finB &&
-    finA > inicioB
-  );
+function rangosSeSuperponen(inicioA, finA, inicioB, finB) {
+  return inicioA < finB && finA > inicioB;
 }
 
 async function existeSuperposicionHorario(
@@ -389,7 +304,6 @@ async function existeSuperposicionHorario(
   horaFin,
   excluirId = null
 ) {
-
   let sql = `
     SELECT id
     FROM horarios
@@ -407,25 +321,305 @@ async function existeSuperposicionHorario(
   ];
 
   if (excluirId) {
-
-    sql += `
-      AND id <> ?
-    `;
-
+    sql += ` AND id <> ? `;
     params.push(excluirId);
   }
 
-  sql += `
-    LIMIT 1
+  sql += ` LIMIT 1 `;
+
+  const [rows] = await connection.query(sql, params);
+  return rows.length > 0;
+}
+
+// ======================================================
+// MOTOR DE DISPONIBILIDAD DE TURNOS
+// ======================================================
+
+function minutosDesdeHora(hora) {
+  const valor = String(hora || '').substring(0, 5);
+  const partes = valor.split(':');
+
+  if (partes.length !== 2) {
+    return null;
+  }
+
+  const horas = Number(partes[0]);
+  const minutos = Number(partes[1]);
+
+  if (
+    !Number.isInteger(horas) ||
+    !Number.isInteger(minutos) ||
+    horas < 0 ||
+    horas > 23 ||
+    minutos < 0 ||
+    minutos > 59
+  ) {
+    return null;
+  }
+
+  return horas * 60 + minutos;
+}
+
+function fechaHoyArgentina() {
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Cordoba',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+
+  const datos = {};
+
+  partes.forEach(parte => {
+    if (parte.type !== 'literal') {
+      datos[parte.type] = parte.value;
+    }
+  });
+
+  return `${datos.year}-${datos.month}-${datos.day}`;
+}
+
+function diaEspanolDesdeFecha(fecha) {
+  const [anio, mes, dia] = String(fecha)
+    .split('-')
+    .map(Number);
+
+  if (!anio || !mes || !dia) {
+    return null;
+  }
+
+  // Mediodía UTC evita cambios de día por zona horaria.
+  const fechaUTC = new Date(
+    Date.UTC(anio, mes - 1, dia, 12, 0, 0)
+  );
+
+  const dias = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado'
+  ];
+
+  return dias[fechaUTC.getUTCDay()];
+}
+
+async function validarDisponibilidadTurno({
+  barberoId,
+  servicioId,
+  fecha,
+  hora,
+  userId = null
+}) {
+  if (!barberoId || !servicioId || !fecha || !hora) {
+    return {
+      ok: false,
+      mensaje: 'Faltan datos para validar el turno.'
+    };
+  }
+
+  if (!horaValida(hora)) {
+    return {
+      ok: false,
+      mensaje: 'La hora seleccionada no es válida.'
+    };
+  }
+
+  const hoy = fechaHoyArgentina();
+
+  if (fecha < hoy) {
+    return {
+      ok: false,
+      mensaje: 'No se pueden crear turnos en una fecha pasada.'
+    };
+  }
+
+  let sqlDatos = `
+    SELECT
+      b.id AS barbero_id,
+      b.sucursal_id AS sucursal_barbero,
+      b.intervalo_minutos,
+      ser.id AS servicio_id,
+      ser.sucursal_id AS sucursal_servicio,
+      ser.duracion_minutos
+    FROM barberos b
+    INNER JOIN servicios ser
+      ON ser.id = ?
   `;
 
-  const [rows] =
-    await connection.query(
-      sql,
-      params
+  const paramsDatos = [
+    servicioId
+  ];
+
+  if (userId) {
+    sqlDatos += `
+      INNER JOIN sucursales s
+        ON b.sucursal_id = s.id
+      WHERE b.id = ?
+      AND s.usuario_id = ?
+    `;
+
+    paramsDatos.push(
+      barberoId,
+      userId
+    );
+  } else {
+    sqlDatos += `
+      WHERE b.id = ?
+    `;
+
+    paramsDatos.push(barberoId);
+  }
+
+  sqlDatos += ` LIMIT 1 `;
+
+  const [datos] = await db.query(
+    sqlDatos,
+    paramsDatos
+  );
+
+  if (datos.length === 0) {
+    return {
+      ok: false,
+      mensaje: 'El profesional o servicio seleccionado no existe.'
+    };
+  }
+
+  const info = datos[0];
+
+  if (
+    Number(info.sucursal_barbero) !==
+    Number(info.sucursal_servicio)
+  ) {
+    return {
+      ok: false,
+      mensaje: 'El profesional y el servicio deben pertenecer a la misma sucursal.'
+    };
+  }
+
+  const duracion = Number(info.duracion_minutos || 30);
+  const inicioTurno = minutosDesdeHora(hora);
+
+  if (inicioTurno === null || duracion <= 0) {
+    return {
+      ok: false,
+      mensaje: 'La duración o la hora del turno no es válida.'
+    };
+  }
+
+  const finTurno = inicioTurno + duracion;
+
+  if (finTurno > 24 * 60) {
+    return {
+      ok: false,
+      mensaje: 'El turno finaliza fuera del día seleccionado.'
+    };
+  }
+
+  const diaSemana = diaEspanolDesdeFecha(fecha);
+
+  if (!diaSemana) {
+    return {
+      ok: false,
+      mensaje: 'La fecha seleccionada no es válida.'
+    };
+  }
+
+  const [rangosLaborales] = await db.query(
+    `
+    SELECT
+      hora_inicio,
+      hora_fin
+    FROM horarios
+    WHERE barbero_id = ?
+    AND dia = ?
+    ORDER BY hora_inicio ASC
+    `,
+    [
+      barberoId,
+      diaSemana
+    ]
+  );
+
+  if (rangosLaborales.length === 0) {
+    return {
+      ok: false,
+      mensaje: `El profesional no tiene horario configurado para ${diaSemana}.`
+    };
+  }
+
+  const entraEnHorario = rangosLaborales.some(rango => {
+    const inicioLaboral = minutosDesdeHora(rango.hora_inicio);
+    const finLaboral = minutosDesdeHora(rango.hora_fin);
+
+    return (
+      inicioLaboral !== null &&
+      finLaboral !== null &&
+      inicioTurno >= inicioLaboral &&
+      finTurno <= finLaboral
+    );
+  });
+
+  if (!entraEnHorario) {
+    return {
+      ok: false,
+      mensaje: `El turno no entra completo dentro del horario laboral de ${diaSemana}.`
+    };
+  }
+
+  const [turnosExistentes] = await db.query(
+    `
+    SELECT
+      t.id,
+      t.hora,
+      ser.duracion_minutos
+    FROM turnos t
+    INNER JOIN servicios ser
+      ON t.servicio_id = ser.id
+    WHERE t.barbero_id = ?
+    AND t.fecha = ?
+    AND t.estado IN ('pendiente', 'exito')
+    `,
+    [
+      barberoId,
+      fecha
+    ]
+  );
+
+  const conflicto = turnosExistentes.some(turno => {
+    const inicioExistente = minutosDesdeHora(turno.hora);
+    const duracionExistente = Number(
+      turno.duracion_minutos || 30
     );
 
-  return rows.length > 0;
+    if (inicioExistente === null) {
+      return false;
+    }
+
+    const finExistente =
+      inicioExistente + duracionExistente;
+
+    return (
+      inicioTurno < finExistente &&
+      finTurno > inicioExistente
+    );
+  });
+
+  if (conflicto) {
+    return {
+      ok: false,
+      mensaje: 'Ese horario se superpone con otro turno del profesional.'
+    };
+  }
+
+  return {
+    ok: true,
+    duracion,
+    diaSemana,
+    sucursalId: Number(info.sucursal_barbero)
+  };
 }
 
 // ======================================================
@@ -433,7 +627,6 @@ async function existeSuperposicionHorario(
 // ======================================================
 
 app.get('/', (req, res) => {
-
   if (req.session.userId) {
     return res.redirect('/dashboard');
   }
@@ -442,7 +635,6 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-
   if (req.session.userId) {
     return res.redirect('/dashboard');
   }
@@ -453,7 +645,6 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/registro', (req, res) => {
-
   if (req.session.userId) {
     return res.redirect('/dashboard');
   }
@@ -462,7 +653,6 @@ app.get('/registro', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-
   req.session.destroy(() => {
     res.redirect('/login');
   });
@@ -476,16 +666,12 @@ app.get(
   '/dashboard',
   isAuth,
   async (req, res) => {
-
     try {
-
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
       if (!user) {
-
         req.session.destroy(() => {
           res.redirect('/login');
         });
@@ -493,22 +679,21 @@ app.get(
         return;
       }
 
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE usuario_id = ?
-          ORDER BY id ASC
-          `,
-          [req.session.userId]
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE usuario_id = ?
+        ORDER BY id ASC
+        `,
+        [req.session.userId]
+      );
 
-      const fechaReg =
-        new Date(user.fecha_registro);
+      const fechaReg = new Date(
+        user.fecha_registro
+      );
 
-      const ahora =
-        new Date();
+      const ahora = new Date();
 
       const diferencia =
         ahora.getTime() -
@@ -550,9 +735,7 @@ app.get(
             PRECIO_SUCURSAL_EXTRA
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error Dashboard:',
         error
@@ -574,28 +757,24 @@ app.get(
   '/links',
   isAuth,
   async (req, res) => {
-
     try {
-
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
       if (!user) {
         return res.redirect('/logout');
       }
 
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE usuario_id = ?
-          ORDER BY id ASC
-          `,
-          [req.session.userId]
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE usuario_id = ?
+        ORDER BY id ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'links',
@@ -604,9 +783,7 @@ app.get(
           sucursales
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error cargando links:',
         error
@@ -628,24 +805,20 @@ app.get(
   '/sucursales',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
-
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE usuario_id = ?
-          ORDER BY id ASC
-          `,
-          [req.session.userId]
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE usuario_id = ?
+        ORDER BY id ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'sucursales_gestion',
@@ -654,9 +827,7 @@ app.get(
           sucursales
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error cargando sucursales:',
         error
@@ -673,7 +844,6 @@ app.get(
 app.post(
   '/sucursales/guardar',
   isAuth,
-
   upload.fields([
     {
       name: 'logo',
@@ -684,11 +854,8 @@ app.post(
       maxCount: 1
     }
   ]),
-
   async (req, res) => {
-
     try {
-
       const {
         nombre,
         direccion
@@ -698,34 +865,31 @@ app.post(
         !nombre ||
         !nombre.trim()
       ) {
-
         return res.status(400).send(
           'El nombre de la sucursal es obligatorio.'
         );
       }
 
-      const [resultado] =
-        await db.query(
-          `
-          INSERT INTO sucursales
-          (
-            usuario_id,
-            nombre,
-            direccion,
-            logo_url,
-            foto_url
-          )
-
-          VALUES (?, ?, ?, NULL, NULL)
-          `,
-          [
-            req.session.userId,
-            nombre.trim(),
-            direccion
-              ? direccion.trim()
-              : null
-          ]
-        );
+      const [resultado] = await db.query(
+        `
+        INSERT INTO sucursales
+        (
+          usuario_id,
+          nombre,
+          direccion,
+          logo_url,
+          foto_url
+        )
+        VALUES (?, ?, ?, NULL, NULL)
+        `,
+        [
+          req.session.userId,
+          nombre.trim(),
+          direccion
+            ? direccion.trim()
+            : null
+        ]
+      );
 
       const sucursalId =
         resultado.insertId;
@@ -738,7 +902,6 @@ app.post(
         req.files.logo &&
         req.files.logo[0]
       ) {
-
         logoUrl =
           await guardarImagenSucursal(
             req.files.logo[0].buffer,
@@ -752,7 +915,6 @@ app.post(
         req.files.foto_local &&
         req.files.foto_local[0]
       ) {
-
         fotoUrl =
           await guardarImagenSucursal(
             req.files.foto_local[0].buffer,
@@ -765,15 +927,12 @@ app.post(
         logoUrl ||
         fotoUrl
       ) {
-
         await db.query(
           `
           UPDATE sucursales
-
           SET
             logo_url = ?,
             foto_url = ?
-
           WHERE id = ?
           AND usuario_id = ?
           `,
@@ -787,9 +946,7 @@ app.post(
       }
 
       res.redirect('/sucursales');
-
     } catch (error) {
-
       console.error(
         'Error guardando sucursal:',
         error
@@ -806,7 +963,6 @@ app.post(
 app.post(
   '/sucursales/editar/:id',
   isAuth,
-
   upload.fields([
     {
       name: 'logo',
@@ -817,11 +973,8 @@ app.post(
       maxCount: 1
     }
   ]),
-
   async (req, res) => {
-
     try {
-
       const sucursalId =
         req.params.id;
 
@@ -832,7 +985,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
@@ -843,25 +995,23 @@ app.post(
         direccion
       } = req.body;
 
-      const [actuales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE id = ?
-          AND usuario_id = ?
-          LIMIT 1
-          `,
-          [
-            sucursalId,
-            req.session.userId
-          ]
-        );
+      const [actuales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE id = ?
+        AND usuario_id = ?
+        LIMIT 1
+        `,
+        [
+          sucursalId,
+          req.session.userId
+        ]
+      );
 
       if (
         actuales.length === 0
       ) {
-
         return res.status(404).send(
           'Sucursal no encontrada.'
         );
@@ -878,7 +1028,6 @@ app.post(
         req.files.logo &&
         req.files.logo[0]
       ) {
-
         logoUrl =
           await guardarImagenSucursal(
             req.files.logo[0].buffer,
@@ -892,7 +1041,6 @@ app.post(
         req.files.foto_local &&
         req.files.foto_local[0]
       ) {
-
         fotoUrl =
           await guardarImagenSucursal(
             req.files.foto_local[0].buffer,
@@ -904,13 +1052,11 @@ app.post(
       await db.query(
         `
         UPDATE sucursales
-
         SET
           nombre = ?,
           direccion = ?,
           logo_url = ?,
           foto_url = ?
-
         WHERE id = ?
         AND usuario_id = ?
         `,
@@ -925,9 +1071,7 @@ app.post(
       );
 
       res.redirect('/sucursales');
-
     } catch (error) {
-
       console.error(
         'Error editando sucursal:',
         error
@@ -945,9 +1089,7 @@ app.post(
   '/sucursales/eliminar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
       const sucursalId =
         req.params.id;
 
@@ -958,7 +1100,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
@@ -976,17 +1117,15 @@ app.post(
         ]
       );
 
-      const carpeta =
-        path.join(
-          __dirname,
-          'public',
-          'uploads',
-          'sucursales',
-          String(sucursalId)
-        );
+      const carpeta = path.join(
+        __dirname,
+        'public',
+        'uploads',
+        'sucursales',
+        String(sucursalId)
+      );
 
       try {
-
         await fs.promises.rm(
           carpeta,
           {
@@ -994,9 +1133,7 @@ app.post(
             force: true
           }
         );
-
       } catch (errorCarpeta) {
-
         console.error(
           'No se pudo borrar carpeta:',
           errorCarpeta
@@ -1004,9 +1141,7 @@ app.post(
       }
 
       res.redirect('/sucursales');
-
     } catch (error) {
-
       console.error(
         'Error eliminando sucursal:',
         error
@@ -1028,43 +1163,34 @@ app.get(
   '/staff',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE usuario_id = ?
+        ORDER BY nombre ASC
+        `,
+        [req.session.userId]
+      );
 
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE usuario_id = ?
-          ORDER BY nombre ASC
-          `,
-          [req.session.userId]
-        );
-
-      const [barberos] =
-        await db.query(
-          `
-          SELECT
-            b.*,
-            s.nombre AS sucursal_nombre
-
-          FROM barberos b
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY b.nombre ASC
-          `,
-          [req.session.userId]
-        );
+      const [barberos] = await db.query(
+        `
+        SELECT
+          b.*,
+          s.nombre AS sucursal_nombre
+        FROM barberos b
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY b.nombre ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'staff',
@@ -1074,9 +1200,7 @@ app.get(
           barberos
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error cargando Staff:',
         error
@@ -1090,18 +1214,12 @@ app.get(
   }
 );
 
-// ======================================================
-// CREAR PROFESIONAL
-// ======================================================
-
 app.post(
   '/staff/guardar',
   isAuth,
   upload.single('foto'),
   async (req, res) => {
-
     try {
-
       const {
         sucursal_id,
         nombre,
@@ -1115,7 +1233,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
@@ -1125,7 +1242,6 @@ app.post(
         !nombre ||
         !nombre.trim()
       ) {
-
         return res.status(400).send(
           'El nombre del profesional es obligatorio.'
         );
@@ -1150,31 +1266,28 @@ app.post(
         intervalo = 30;
       }
 
-      const [resultado] =
-        await db.query(
-          `
-          INSERT INTO barberos
-          (
-            sucursal_id,
-            nombre,
-            foto_url,
-            intervalo_minutos
-          )
-
-          VALUES (?, ?, NULL, ?)
-          `,
-          [
-            sucursal_id,
-            nombre.trim(),
-            intervalo
-          ]
-        );
+      const [resultado] = await db.query(
+        `
+        INSERT INTO barberos
+        (
+          sucursal_id,
+          nombre,
+          foto_url,
+          intervalo_minutos
+        )
+        VALUES (?, ?, NULL, ?)
+        `,
+        [
+          sucursal_id,
+          nombre.trim(),
+          intervalo
+        ]
+      );
 
       const barberoId =
         resultado.insertId;
 
       if (req.file) {
-
         const fotoUrl =
           await guardarImagenBarbero(
             req.file.buffer,
@@ -1195,9 +1308,7 @@ app.post(
       }
 
       res.redirect('/staff');
-
     } catch (error) {
-
       console.error(
         'Error guardando profesional:',
         error
@@ -1211,18 +1322,12 @@ app.post(
   }
 );
 
-// ======================================================
-// EDITAR PROFESIONAL
-// ======================================================
-
 app.post(
   '/staff/editar/:id',
   isAuth,
   upload.single('foto'),
   async (req, res) => {
-
     try {
-
       const barberoId =
         req.params.id;
 
@@ -1239,7 +1344,6 @@ app.post(
         );
 
       if (!barberoAutorizado) {
-
         return res.status(403).send(
           'Profesional no autorizado.'
         );
@@ -1252,36 +1356,30 @@ app.post(
         );
 
       if (!sucursalAutorizada) {
-
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
       }
 
-      const [actuales] =
-        await db.query(
-          `
-          SELECT b.*
-          FROM barberos b
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE b.id = ?
-          AND s.usuario_id = ?
-
-          LIMIT 1
-          `,
-          [
-            barberoId,
-            req.session.userId
-          ]
-        );
+      const [actuales] = await db.query(
+        `
+        SELECT b.*
+        FROM barberos b
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE b.id = ?
+        AND s.usuario_id = ?
+        LIMIT 1
+        `,
+        [
+          barberoId,
+          req.session.userId
+        ]
+      );
 
       if (
         actuales.length === 0
       ) {
-
         return res.status(404).send(
           'Profesional no encontrado.'
         );
@@ -1310,7 +1408,6 @@ app.post(
         actuales[0].foto_url;
 
       if (req.file) {
-
         fotoUrl =
           await guardarImagenBarbero(
             req.file.buffer,
@@ -1321,13 +1418,11 @@ app.post(
       await db.query(
         `
         UPDATE barberos
-
         SET
           sucursal_id = ?,
           nombre = ?,
           foto_url = ?,
           intervalo_minutos = ?
-
         WHERE id = ?
         `,
         [
@@ -1340,9 +1435,7 @@ app.post(
       );
 
       res.redirect('/staff');
-
     } catch (error) {
-
       console.error(
         'Error editando profesional:',
         error
@@ -1356,19 +1449,13 @@ app.post(
   }
 );
 
-// ======================================================
-// ELIMINAR PROFESIONAL
-// ======================================================
-
 app.post(
   '/staff/eliminar/:id',
   isAuth,
   async (req, res) => {
-
     let connection;
 
     try {
-
       const barberoId =
         req.params.id;
 
@@ -1379,7 +1466,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.status(403).send(
           'Profesional no autorizado.'
         );
@@ -1402,10 +1488,8 @@ app.post(
         `
         DELETE b
         FROM barberos b
-
         INNER JOIN sucursales s
           ON b.sucursal_id = s.id
-
         WHERE b.id = ?
         AND s.usuario_id = ?
         `,
@@ -1420,17 +1504,15 @@ app.post(
       connection.release();
       connection = null;
 
-      const carpeta =
-        path.join(
-          __dirname,
-          'public',
-          'uploads',
-          'staff',
-          String(barberoId)
-        );
+      const carpeta = path.join(
+        __dirname,
+        'public',
+        'uploads',
+        'staff',
+        String(barberoId)
+      );
 
       try {
-
         await fs.promises.rm(
           carpeta,
           {
@@ -1438,9 +1520,7 @@ app.post(
             force: true
           }
         );
-
       } catch (errorCarpeta) {
-
         console.error(
           'No se pudo borrar la foto del profesional:',
           errorCarpeta
@@ -1448,11 +1528,8 @@ app.post(
       }
 
       res.redirect('/staff');
-
     } catch (error) {
-
       if (connection) {
-
         try {
           await connection.rollback();
         } catch (_) {}
@@ -1481,43 +1558,34 @@ app.get(
   '/servicios',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE usuario_id = ?
+        ORDER BY nombre ASC
+        `,
+        [req.session.userId]
+      );
 
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE usuario_id = ?
-          ORDER BY nombre ASC
-          `,
-          [req.session.userId]
-        );
-
-      const [servicios] =
-        await db.query(
-          `
-          SELECT
-            ser.*,
-            s.nombre AS sucursal_nombre
-
-          FROM servicios ser
-
-          INNER JOIN sucursales s
-            ON ser.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY ser.nombre ASC
-          `,
-          [req.session.userId]
-        );
+      const [servicios] = await db.query(
+        `
+        SELECT
+          ser.*,
+          s.nombre AS sucursal_nombre
+        FROM servicios ser
+        INNER JOIN sucursales s
+          ON ser.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY ser.nombre ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'servicios_gestion',
@@ -1527,9 +1595,7 @@ app.get(
           servicios
         }
       );
-
     } catch (error) {
-
       console.error(error);
 
       res.status(500).send(
@@ -1544,9 +1610,7 @@ app.post(
   '/servicios/guardar',
   isAuth,
   async (req, res) => {
-
     try {
-
       const {
         sucursal_id,
         nombre,
@@ -1564,7 +1628,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.status(403).send(
           'Sucursal no autorizada.'
         );
@@ -1579,7 +1642,6 @@ app.post(
           precio,
           duracion_minutos
         )
-
         VALUES (?, ?, ?, ?)
         `,
         [
@@ -1591,9 +1653,7 @@ app.post(
       );
 
       res.redirect('/servicios');
-
     } catch (error) {
-
       console.error(error);
 
       res.status(500).send(
@@ -1608,9 +1668,7 @@ app.post(
   '/servicios/editar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
       const {
         nombre,
         precio
@@ -1623,15 +1681,12 @@ app.post(
       await db.query(
         `
         UPDATE servicios ser
-
         INNER JOIN sucursales s
           ON ser.sucursal_id = s.id
-
         SET
           ser.nombre = ?,
           ser.precio = ?,
           ser.duracion_minutos = ?
-
         WHERE ser.id = ?
         AND s.usuario_id = ?
         `,
@@ -1645,9 +1700,7 @@ app.post(
       );
 
       res.redirect('/servicios');
-
     } catch (error) {
-
       console.error(error);
 
       res.status(500).send(
@@ -1662,18 +1715,13 @@ app.post(
   '/servicios/eliminar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
       await db.query(
         `
         DELETE ser
-
         FROM servicios ser
-
         INNER JOIN sucursales s
           ON ser.sucursal_id = s.id
-
         WHERE ser.id = ?
         AND s.usuario_id = ?
         `,
@@ -1684,9 +1732,7 @@ app.post(
       );
 
       res.redirect('/servicios');
-
     } catch (error) {
-
       console.error(error);
 
       res.status(500).send(
@@ -1705,75 +1751,61 @@ app.get(
   '/horarios',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const [barberos] = await db.query(
+        `
+        SELECT
+          b.id,
+          b.nombre,
+          b.sucursal_id,
+          b.intervalo_minutos,
+          s.nombre AS sucursal_nombre
+        FROM barberos b
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY
+          s.nombre ASC,
+          b.nombre ASC
+        `,
+        [req.session.userId]
+      );
 
-      const [barberos] =
-        await db.query(
-          `
-          SELECT
-            b.id,
-            b.nombre,
-            b.sucursal_id,
-            b.intervalo_minutos,
-            s.nombre AS sucursal_nombre
-
-          FROM barberos b
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY
-            s.nombre ASC,
-            b.nombre ASC
-          `,
-          [req.session.userId]
-        );
-
-      const [horarios] =
-        await db.query(
-          `
-          SELECT
-            h.*,
-            b.nombre AS barbero_nombre,
-            b.intervalo_minutos,
-            s.id AS sucursal_id,
-            s.nombre AS sucursal_nombre
-
-          FROM horarios h
-
-          INNER JOIN barberos b
-            ON h.barbero_id = b.id
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY
-            s.nombre ASC,
-            b.nombre ASC,
-            FIELD(
-              h.dia,
-              'Lunes',
-              'Martes',
-              'Miércoles',
-              'Jueves',
-              'Viernes',
-              'Sábado',
-              'Domingo'
-            ),
-            h.hora_inicio ASC
-          `,
-          [req.session.userId]
-        );
+      const [horarios] = await db.query(
+        `
+        SELECT
+          h.*,
+          b.nombre AS barbero_nombre,
+          b.intervalo_minutos,
+          s.id AS sucursal_id,
+          s.nombre AS sucursal_nombre
+        FROM horarios h
+        INNER JOIN barberos b
+          ON h.barbero_id = b.id
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY
+          s.nombre ASC,
+          b.nombre ASC,
+          FIELD(
+            h.dia,
+            'Lunes',
+            'Martes',
+            'Miércoles',
+            'Jueves',
+            'Viernes',
+            'Sábado',
+            'Domingo'
+          ),
+          h.hora_inicio ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'horarios',
@@ -1785,9 +1817,7 @@ app.get(
           ok: req.query.ok || null
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error cargando horarios:',
         error
@@ -1801,19 +1831,13 @@ app.get(
   }
 );
 
-// ======================================================
-// GUARDAR HORARIOS
-// ======================================================
-
 app.post(
   '/horarios/guardar',
   isAuth,
   async (req, res) => {
-
     let connection;
 
     try {
-
       const {
         barbero_id,
         dias,
@@ -1830,7 +1854,6 @@ app.post(
         );
 
       if (!autorizado) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1842,14 +1865,9 @@ app.post(
       let diasSeleccionados = [];
 
       if (Array.isArray(dias)) {
-
-        diasSeleccionados =
-          dias;
-
+        diasSeleccionados = dias;
       } else if (dias) {
-
-        diasSeleccionados =
-          [dias];
+        diasSeleccionados = [dias];
       }
 
       diasSeleccionados =
@@ -1858,15 +1876,12 @@ app.post(
           .filter(Boolean);
 
       diasSeleccionados = [
-        ...new Set(
-          diasSeleccionados
-        )
+        ...new Set(diasSeleccionados)
       ];
 
       if (
         diasSeleccionados.length === 0
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1881,7 +1896,6 @@ app.post(
           fin_1
         )
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1891,17 +1905,10 @@ app.post(
       }
 
       const segundoIncompleto =
-        (
-          inicio_2 &&
-          !fin_2
-        ) ||
-        (
-          !inicio_2 &&
-          fin_2
-        );
+        (inicio_2 && !fin_2) ||
+        (!inicio_2 && fin_2);
 
       if (segundoIncompleto) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1923,7 +1930,6 @@ app.post(
           fin_2
         )
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1941,7 +1947,6 @@ app.post(
           fin_2
         )
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -1959,7 +1964,6 @@ app.post(
         const dia
         of diasSeleccionados
       ) {
-
         const existePrimerRango =
           await existeSuperposicionHorario(
             connection,
@@ -1970,14 +1974,12 @@ app.post(
           );
 
         if (existePrimerRango) {
-
           throw new Error(
             `${dia}: el horario ${inicio_1} - ${fin_1} se superpone con otro horario ya cargado.`
           );
         }
 
         if (tieneSegundoRango) {
-
           const existeSegundoRango =
             await existeSuperposicionHorario(
               connection,
@@ -1988,7 +1990,6 @@ app.post(
             );
 
           if (existeSegundoRango) {
-
             throw new Error(
               `${dia}: el horario ${inicio_2} - ${fin_2} se superpone con otro horario ya cargado.`
             );
@@ -2000,7 +2001,6 @@ app.post(
         const dia
         of diasSeleccionados
       ) {
-
         await connection.query(
           `
           INSERT INTO horarios
@@ -2010,7 +2010,6 @@ app.post(
             hora_inicio,
             hora_fin
           )
-
           VALUES (?, ?, ?, ?)
           `,
           [
@@ -2022,7 +2021,6 @@ app.post(
         );
 
         if (tieneSegundoRango) {
-
           await connection.query(
             `
             INSERT INTO horarios
@@ -2032,7 +2030,6 @@ app.post(
               hora_inicio,
               hora_fin
             )
-
             VALUES (?, ?, ?, ?)
             `,
             [
@@ -2056,11 +2053,8 @@ app.post(
           'Horarios guardados correctamente.'
         )
       );
-
     } catch (error) {
-
       if (connection) {
-
         try {
           await connection.rollback();
         } catch (_) {}
@@ -2084,17 +2078,11 @@ app.post(
   }
 );
 
-// ======================================================
-// EDITAR HORARIO
-// ======================================================
-
 app.post(
   '/horarios/editar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
       const horarioId =
         req.params.id;
 
@@ -2108,7 +2096,6 @@ app.post(
         normalizarDia(dia);
 
       if (!diaNormalizado) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -2123,7 +2110,6 @@ app.post(
           hora_fin
         )
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -2138,18 +2124,13 @@ app.post(
           SELECT
             h.id,
             h.barbero_id
-
           FROM horarios h
-
           INNER JOIN barberos b
             ON h.barbero_id = b.id
-
           INNER JOIN sucursales s
             ON b.sucursal_id = s.id
-
           WHERE h.id = ?
           AND s.usuario_id = ?
-
           LIMIT 1
           `,
           [
@@ -2161,7 +2142,6 @@ app.post(
       if (
         horariosActuales.length === 0
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -2184,7 +2164,6 @@ app.post(
         );
 
       if (existeConflicto) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -2196,18 +2175,14 @@ app.post(
       await db.query(
         `
         UPDATE horarios h
-
         INNER JOIN barberos b
           ON h.barbero_id = b.id
-
         INNER JOIN sucursales s
           ON b.sucursal_id = s.id
-
         SET
           h.dia = ?,
           h.hora_inicio = ?,
           h.hora_fin = ?
-
         WHERE h.id = ?
         AND s.usuario_id = ?
         `,
@@ -2226,9 +2201,7 @@ app.post(
           'Horario actualizado correctamente.'
         )
       );
-
     } catch (error) {
-
       console.error(
         'Error editando horario:',
         error
@@ -2244,30 +2217,20 @@ app.post(
   }
 );
 
-// ======================================================
-// ELIMINAR HORARIO
-// ======================================================
-
 app.post(
   '/horarios/eliminar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
       const [resultado] =
         await db.query(
           `
           DELETE h
-
           FROM horarios h
-
           INNER JOIN barberos b
             ON h.barbero_id = b.id
-
           INNER JOIN sucursales s
             ON b.sucursal_id = s.id
-
           WHERE h.id = ?
           AND s.usuario_id = ?
           `,
@@ -2280,7 +2243,6 @@ app.post(
       if (
         resultado.affectedRows === 0
       ) {
-
         return res.redirect(
           '/horarios?error=' +
           encodeURIComponent(
@@ -2295,9 +2257,7 @@ app.post(
           'Horario eliminado.'
         )
       );
-
     } catch (error) {
-
       console.error(
         'Error eliminando horario:',
         error
@@ -2321,89 +2281,76 @@ app.get(
   '/turnos',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
+      const [barberos] = await db.query(
+        `
+        SELECT
+          b.id,
+          b.nombre,
+          b.sucursal_id,
+          b.intervalo_minutos,
+          b.foto_url,
+          s.nombre AS sucursal_nombre
+        FROM barberos b
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY
+          s.nombre ASC,
+          b.nombre ASC
+        `,
+        [req.session.userId]
+      );
 
-      const [barberos] =
-        await db.query(
-          `
-          SELECT
-            b.id,
-            b.nombre,
-            b.sucursal_id,
-            s.nombre AS sucursal_nombre
+      const [servicios] = await db.query(
+        `
+        SELECT
+          ser.id,
+          ser.nombre,
+          ser.precio,
+          ser.duracion_minutos,
+          ser.sucursal_id,
+          s.nombre AS sucursal_nombre
+        FROM servicios ser
+        INNER JOIN sucursales s
+          ON ser.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY
+          s.nombre ASC,
+          ser.nombre ASC
+        `,
+        [req.session.userId]
+      );
 
-          FROM barberos b
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY b.nombre ASC
-          `,
-          [req.session.userId]
-        );
-
-      const [servicios] =
-        await db.query(
-          `
-          SELECT
-            ser.id,
-            ser.nombre,
-            ser.precio,
-            ser.duracion_minutos,
-            ser.sucursal_id,
-            s.nombre AS sucursal_nombre
-
-          FROM servicios ser
-
-          INNER JOIN sucursales s
-            ON ser.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY ser.nombre ASC
-          `,
-          [req.session.userId]
-        );
-
-      const [turnos] =
-        await db.query(
-          `
-          SELECT
-            t.*,
-            b.nombre AS barbero_nombre,
-            ser.nombre AS servicio_nombre,
-            ser.precio,
-            ser.duracion_minutos,
-            s.nombre AS sucursal_nombre
-
-          FROM turnos t
-
-          INNER JOIN barberos b
-            ON t.barbero_id = b.id
-
-          INNER JOIN servicios ser
-            ON t.servicio_id = ser.id
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          WHERE s.usuario_id = ?
-
-          ORDER BY
-            t.fecha DESC,
-            t.hora DESC,
-            t.id DESC
-          `,
-          [req.session.userId]
-        );
+      const [turnos] = await db.query(
+        `
+        SELECT
+          t.*,
+          b.nombre AS barbero_nombre,
+          b.sucursal_id,
+          ser.nombre AS servicio_nombre,
+          ser.precio,
+          ser.duracion_minutos,
+          s.nombre AS sucursal_nombre
+        FROM turnos t
+        INNER JOIN barberos b
+          ON t.barbero_id = b.id
+        INNER JOIN servicios ser
+          ON t.servicio_id = ser.id
+        INNER JOIN sucursales s
+          ON b.sucursal_id = s.id
+        WHERE s.usuario_id = ?
+        ORDER BY
+          t.fecha ASC,
+          t.hora ASC,
+          t.id ASC
+        `,
+        [req.session.userId]
+      );
 
       res.render(
         'turnos',
@@ -2411,13 +2358,17 @@ app.get(
           user,
           barberos,
           servicios,
-          turnos
+          turnos,
+          hoy: fechaHoyArgentina(),
+          error: req.query.error || null,
+          ok: req.query.ok || null
         }
       );
-
     } catch (error) {
-
-      console.error(error);
+      console.error(
+        'Error cargando turnos:',
+        error
+      );
 
       res.status(500).send(
         'Error al cargar turnos: ' +
@@ -2427,13 +2378,15 @@ app.get(
   }
 );
 
+// ======================================================
+// CREAR TURNO MANUAL
+// ======================================================
+
 app.post(
   '/turnos/guardar',
   isAuth,
   async (req, res) => {
-
     try {
-
       const {
         barbero_id,
         servicio_id,
@@ -2443,55 +2396,37 @@ app.post(
         hora
       } = req.body;
 
-      const [validacion] =
-        await db.query(
-          `
-          SELECT
-            b.id AS barbero_id,
-            b.sucursal_id AS sucursal_barbero,
-            ser.id AS servicio_id,
-            ser.sucursal_id AS sucursal_servicio
-
-          FROM barberos b
-
-          INNER JOIN sucursales s
-            ON b.sucursal_id = s.id
-
-          INNER JOIN servicios ser
-            ON ser.id = ?
-
-          WHERE b.id = ?
-          AND s.usuario_id = ?
-
-          LIMIT 1
-          `,
-          [
-            servicio_id,
-            barbero_id,
-            req.session.userId
-          ]
-        );
-
       if (
-        validacion.length === 0
+        !barbero_id ||
+        !servicio_id ||
+        !cliente_nombre ||
+        !cliente_nombre.trim() ||
+        !fecha ||
+        !hora
       ) {
-
-        return res.status(403).send(
-          'Barbero o servicio no autorizado.'
+        return res.redirect(
+          '/turnos?error=' +
+          encodeURIComponent(
+            'Completá profesional, servicio, cliente, fecha y hora.'
+          )
         );
       }
 
-      if (
-        Number(
-          validacion[0].sucursal_barbero
-        ) !==
-        Number(
-          validacion[0].sucursal_servicio
-        )
-      ) {
+      const disponibilidad =
+        await validarDisponibilidadTurno({
+          barberoId: barbero_id,
+          servicioId: servicio_id,
+          fecha,
+          hora,
+          userId: req.session.userId
+        });
 
-        return res.status(400).send(
-          'El barbero y el servicio deben pertenecer a la misma sucursal.'
+      if (!disponibilidad.ok) {
+        return res.redirect(
+          '/turnos?error=' +
+          encodeURIComponent(
+            disponibilidad.mensaje
+          )
         );
       }
 
@@ -2508,7 +2443,6 @@ app.post(
           fecha_hora,
           estado
         )
-
         VALUES
         (
           ?,
@@ -2524,8 +2458,10 @@ app.post(
         [
           barbero_id,
           servicio_id,
-          cliente_nombre,
-          cliente_whatsapp || null,
+          cliente_nombre.trim(),
+          cliente_whatsapp
+            ? cliente_whatsapp.trim()
+            : null,
           fecha,
           hora,
           fecha,
@@ -2533,27 +2469,37 @@ app.post(
         ]
       );
 
-      res.redirect('/turnos');
-
+      res.redirect(
+        '/turnos?ok=' +
+        encodeURIComponent(
+          'Turno creado correctamente.'
+        )
+      );
     } catch (error) {
+      console.error(
+        'Error guardando turno:',
+        error
+      );
 
-      console.error(error);
-
-      res.status(500).send(
-        'Error guardando turno: ' +
-        error.message
+      res.redirect(
+        '/turnos?error=' +
+        encodeURIComponent(
+          'No se pudo crear el turno.'
+        )
       );
     }
   }
 );
 
+// ======================================================
+// CAMBIAR ESTADO
+// ======================================================
+
 app.post(
   '/turnos/estado',
   isAuth,
   async (req, res) => {
-
     try {
-
       const {
         turno_id,
         nuevo_estado
@@ -2567,7 +2513,6 @@ app.post(
         estado === 'completo' ||
         estado === 'finalizado'
       ) {
-
         estado = 'exito';
       }
 
@@ -2582,24 +2527,22 @@ app.post(
           estado
         )
       ) {
-
-        return res.status(400).send(
-          'Estado de turno inválido.'
+        return res.redirect(
+          '/turnos?error=' +
+          encodeURIComponent(
+            'Estado de turno inválido.'
+          )
         );
       }
 
-      await db.query(
+      const [resultado] = await db.query(
         `
         UPDATE turnos t
-
         INNER JOIN barberos b
           ON t.barbero_id = b.id
-
         INNER JOIN sucursales s
           ON b.sucursal_id = s.id
-
         SET t.estado = ?
-
         WHERE t.id = ?
         AND s.usuario_id = ?
         `,
@@ -2610,39 +2553,60 @@ app.post(
         ]
       );
 
-      res.redirect('/turnos');
+      if (
+        resultado.affectedRows === 0
+      ) {
+        return res.redirect(
+          '/turnos?error=' +
+          encodeURIComponent(
+            'Turno no encontrado.'
+          )
+        );
+      }
 
+      res.redirect(
+        '/turnos?ok=' +
+        encodeURIComponent(
+          estado === 'exito'
+            ? 'Turno marcado como realizado.'
+            : estado === 'cancelado'
+              ? 'Turno cancelado. El horario vuelve a quedar disponible.'
+              : 'Estado actualizado.'
+        )
+      );
     } catch (error) {
+      console.error(
+        'Error cambiando estado:',
+        error
+      );
 
-      console.error(error);
-
-      res.status(500).send(
-        'Error cambiando estado: ' +
-        error.message
+      res.redirect(
+        '/turnos?error=' +
+        encodeURIComponent(
+          'No se pudo cambiar el estado del turno.'
+        )
       );
     }
   }
 );
 
+// ======================================================
+// ELIMINAR TURNO
+// ======================================================
+
 app.post(
   '/turnos/eliminar/:id',
   isAuth,
   async (req, res) => {
-
     try {
-
-      await db.query(
+      const [resultado] = await db.query(
         `
         DELETE t
-
         FROM turnos t
-
         INNER JOIN barberos b
           ON t.barbero_id = b.id
-
         INNER JOIN sucursales s
           ON b.sucursal_id = s.id
-
         WHERE t.id = ?
         AND s.usuario_id = ?
         `,
@@ -2652,15 +2616,34 @@ app.post(
         ]
       );
 
-      res.redirect('/turnos');
+      if (
+        resultado.affectedRows === 0
+      ) {
+        return res.redirect(
+          '/turnos?error=' +
+          encodeURIComponent(
+            'Turno no encontrado.'
+          )
+        );
+      }
 
+      res.redirect(
+        '/turnos?ok=' +
+        encodeURIComponent(
+          'Turno eliminado.'
+        )
+      );
     } catch (error) {
+      console.error(
+        'Error eliminando turno:',
+        error
+      );
 
-      console.error(error);
-
-      res.status(500).send(
-        'Error eliminando turno: ' +
-        error.message
+      res.redirect(
+        '/turnos?error=' +
+        encodeURIComponent(
+          'No se pudo eliminar el turno.'
+        )
       );
     }
   }
@@ -2674,56 +2657,42 @@ app.get(
   '/caja',
   isAuth,
   async (req, res) => {
-
     try {
+      const user = await obtenerUsuario(
+        req.session.userId
+      );
 
-      const user =
-        await obtenerUsuario(
-          req.session.userId
-        );
-
-      const [resultados] =
-        await db.query(
-          `
-          SELECT
-
-            t.id,
-            t.fecha,
-            t.hora,
-            t.fecha_hora,
-            t.estado,
-
-            suc.id AS sucursal_id,
-            suc.nombre AS sucursal_nombre,
-
-            b.id AS barbero_id,
-            b.nombre AS barbero_nombre,
-
-            ser.id AS servicio_id,
-            ser.nombre AS servicio_nombre,
-            ser.precio
-
-          FROM turnos t
-
-          INNER JOIN barberos b
-            ON t.barbero_id = b.id
-
-          INNER JOIN sucursales suc
-            ON b.sucursal_id = suc.id
-
-          INNER JOIN servicios ser
-            ON t.servicio_id = ser.id
-
-          WHERE t.estado = 'exito'
-          AND suc.usuario_id = ?
-
-          ORDER BY
-            t.fecha DESC,
-            t.hora DESC,
-            t.id DESC
-          `,
-          [req.session.userId]
-        );
+      const [resultados] = await db.query(
+        `
+        SELECT
+          t.id,
+          t.fecha,
+          t.hora,
+          t.fecha_hora,
+          t.estado,
+          suc.id AS sucursal_id,
+          suc.nombre AS sucursal_nombre,
+          b.id AS barbero_id,
+          b.nombre AS barbero_nombre,
+          ser.id AS servicio_id,
+          ser.nombre AS servicio_nombre,
+          ser.precio
+        FROM turnos t
+        INNER JOIN barberos b
+          ON t.barbero_id = b.id
+        INNER JOIN sucursales suc
+          ON b.sucursal_id = suc.id
+        INNER JOIN servicios ser
+          ON t.servicio_id = ser.id
+        WHERE t.estado = 'exito'
+        AND suc.usuario_id = ?
+        ORDER BY
+          t.fecha DESC,
+          t.hora DESC,
+          t.id DESC
+        `,
+        [req.session.userId]
+      );
 
       const sucursales = [
         ...new Set(
@@ -2742,9 +2711,7 @@ app.get(
           sucursales
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error Caja:',
         error
@@ -2765,53 +2732,47 @@ app.get(
 app.get(
   '/b/:id',
   async (req, res) => {
-
     try {
-
       const sucursalId =
         req.params.id;
 
-      const [sucursales] =
-        await db.query(
-          `
-          SELECT *
-          FROM sucursales
-          WHERE id = ?
-          LIMIT 1
-          `,
-          [sucursalId]
-        );
+      const [sucursales] = await db.query(
+        `
+        SELECT *
+        FROM sucursales
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [sucursalId]
+      );
 
       if (
         sucursales.length === 0
       ) {
-
         return res.status(404).send(
           'Barbería no encontrada.'
         );
       }
 
-      const [barberos] =
-        await db.query(
-          `
-          SELECT *
-          FROM barberos
-          WHERE sucursal_id = ?
-          ORDER BY nombre ASC
-          `,
-          [sucursalId]
-        );
+      const [barberos] = await db.query(
+        `
+        SELECT *
+        FROM barberos
+        WHERE sucursal_id = ?
+        ORDER BY nombre ASC
+        `,
+        [sucursalId]
+      );
 
-      const [servicios] =
-        await db.query(
-          `
-          SELECT *
-          FROM servicios
-          WHERE sucursal_id = ?
-          ORDER BY nombre ASC
-          `,
-          [sucursalId]
-        );
+      const [servicios] = await db.query(
+        `
+        SELECT *
+        FROM servicios
+        WHERE sucursal_id = ?
+        ORDER BY nombre ASC
+        `,
+        [sucursalId]
+      );
 
       res.render(
         'reserva_publica',
@@ -2822,9 +2783,7 @@ app.get(
           servicios
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error reserva pública:',
         error
@@ -2845,11 +2804,9 @@ app.get(
 app.post(
   '/auth/registro',
   async (req, res) => {
-
     let connection;
 
     try {
-
       const {
         whatsapp,
         password,
@@ -2861,7 +2818,6 @@ app.post(
         !password ||
         !nombre_barberia
       ) {
-
         return res.status(400).send(
           'Todos los campos obligatorios deben completarse.'
         );
@@ -2886,7 +2842,6 @@ app.post(
       if (
         existentes.length > 0
       ) {
-
         await connection.rollback();
 
         connection.release();
@@ -2897,11 +2852,10 @@ app.post(
         );
       }
 
-      const hash =
-        await bcrypt.hash(
-          password,
-          10
-        );
+      const hash = await bcrypt.hash(
+        password,
+        10
+      );
 
       const [resultadoUsuario] =
         await connection.query(
@@ -2911,7 +2865,6 @@ app.post(
             whatsapp,
             password
           )
-
           VALUES (?, ?)
           `,
           [
@@ -2927,7 +2880,6 @@ app.post(
           usuario_id,
           nombre
         )
-
         VALUES (?, ?)
         `,
         [
@@ -2945,11 +2897,8 @@ app.post(
         resultadoUsuario.insertId;
 
       res.redirect('/dashboard');
-
     } catch (error) {
-
       if (connection) {
-
         try {
           await connection.rollback();
         } catch (_) {}
@@ -2977,29 +2926,25 @@ app.post(
 app.post(
   '/auth/login',
   async (req, res) => {
-
     try {
-
       const {
         whatsapp,
         password
       } = req.body;
 
-      const [usuarios] =
-        await db.query(
-          `
-          SELECT *
-          FROM usuarios
-          WHERE whatsapp = ?
-          LIMIT 1
-          `,
-          [whatsapp]
-        );
+      const [usuarios] = await db.query(
+        `
+        SELECT *
+        FROM usuarios
+        WHERE whatsapp = ?
+        LIMIT 1
+        `,
+        [whatsapp]
+      );
 
       if (
         usuarios.length === 0
       ) {
-
         return res.render(
           'login',
           {
@@ -3016,7 +2961,6 @@ app.post(
         usuario.estado ===
         'bloqueado'
       ) {
-
         return res.render(
           'login',
           {
@@ -3033,7 +2977,6 @@ app.post(
         );
 
       if (!passwordCorrecta) {
-
         return res.render(
           'login',
           {
@@ -3047,9 +2990,7 @@ app.post(
         usuario.id;
 
       res.redirect('/dashboard');
-
     } catch (error) {
-
       console.error(
         'Error Login:',
         error
@@ -3071,35 +3012,27 @@ app.get(
   '/admin',
   isAdmin,
   async (req, res) => {
-
     try {
-
-      const [usuarios] =
-        await db.query(
-          `
-          SELECT
-
-            u.*,
-
-            (
-              SELECT COUNT(*)
-              FROM sucursales s
-              WHERE s.usuario_id = u.id
-            ) AS total_sucursales,
-
-            (
-              SELECT s2.nombre
-              FROM sucursales s2
-              WHERE s2.usuario_id = u.id
-              ORDER BY s2.id ASC
-              LIMIT 1
-            ) AS barberia_principal
-
-          FROM usuarios u
-
-          ORDER BY u.id DESC
-          `
-        );
+      const [usuarios] = await db.query(
+        `
+        SELECT
+          u.*,
+          (
+            SELECT COUNT(*)
+            FROM sucursales s
+            WHERE s.usuario_id = u.id
+          ) AS total_sucursales,
+          (
+            SELECT s2.nombre
+            FROM sucursales s2
+            WHERE s2.usuario_id = u.id
+            ORDER BY s2.id ASC
+            LIMIT 1
+          ) AS barberia_principal
+        FROM usuarios u
+        ORDER BY u.id DESC
+        `
+      );
 
       res.render(
         'admin',
@@ -3111,9 +3044,7 @@ app.get(
             PRECIO_SUCURSAL_EXTRA
         }
       );
-
     } catch (error) {
-
       console.error(
         'Error Admin:',
         error
@@ -3131,9 +3062,7 @@ app.post(
   '/admin/usuarios/:id/estado',
   isAdmin,
   async (req, res) => {
-
     try {
-
       const usuarioId =
         req.params.id;
 
@@ -3152,38 +3081,33 @@ app.post(
           estado
         )
       ) {
-
         return res.status(400).send(
           'Estado de usuario inválido.'
         );
       }
 
-      const [resultado] =
-        await db.query(
-          `
-          UPDATE usuarios
-          SET estado = ?
-          WHERE id = ?
-          `,
-          [
-            estado,
-            usuarioId
-          ]
-        );
+      const [resultado] = await db.query(
+        `
+        UPDATE usuarios
+        SET estado = ?
+        WHERE id = ?
+        `,
+        [
+          estado,
+          usuarioId
+        ]
+      );
 
       if (
         resultado.affectedRows === 0
       ) {
-
         return res.status(404).send(
           'Usuario no encontrado.'
         );
       }
 
       res.redirect('/admin');
-
     } catch (error) {
-
       console.error(
         'Error cambiando estado:',
         error
@@ -3200,9 +3124,7 @@ app.post(
 app.get(
   '/admin/logout',
   (req, res) => {
-
     req.session.isAdmin = false;
-
     res.redirect('/login');
   }
 );
@@ -3213,17 +3135,14 @@ app.get(
 
 app.use(
   (error, req, res, next) => {
-
     if (
       error instanceof
       multer.MulterError
     ) {
-
       if (
         error.code ===
         'LIMIT_FILE_SIZE'
       ) {
-
         return res.status(400).send(
           'La imagen es demasiado pesada. Máximo permitido: 8 MB.'
         );
@@ -3242,7 +3161,6 @@ app.use(
         'Solo se permiten imágenes'
       )
     ) {
-
       return res.status(400).send(
         error.message
       );
@@ -3258,7 +3176,6 @@ app.use(
 
 app.use(
   (req, res) => {
-
     res.status(404).send(
       'Página no encontrada.'
     );
@@ -3275,9 +3192,9 @@ const PORT =
 app.listen(
   PORT,
   () => {
-
     console.log(
       `BookBarber V2 activo en puerto ${PORT}`
     );
   }
 );
+
