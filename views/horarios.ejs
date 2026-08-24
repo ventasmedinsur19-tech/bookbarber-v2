@@ -1,107 +1,1482 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Horarios - BookBarber</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Horarios | BookBarber</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  >
+
+  <style>
+
+    body {
+      background-color: #0a0a0a;
+      color: #e5e5e5;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    input[type="time"] {
+      color-scheme: dark;
+    }
+
+  </style>
+
 </head>
-<body class="bg-zinc-950 text-zinc-200 p-4 min-h-screen">
 
-  <div class="max-w-md mx-auto space-y-8">
-    
-    <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-white">Horarios</h1>
-      <a href="/dashboard" class="text-sm bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700">Volver</a>
-    </div>
 
-    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg">
-      <h2 class="text-lg font-semibold text-orange-500 mb-4">Añadir Turno Laboral</h2>
-      <form action="/horarios/guardar" method="POST" class="space-y-4">
-        
-        <select name="barbero_id" required class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm">
-          <option value="" disabled selected>-- Seleccionar Barbero --</option>
-          <% barberos.forEach(b => { %>
-            <option value="<%= b.id %>"><%= b.nombre %> (<%= b.sucursal_nombre %>)</option>
-          <% }) %>
-        </select>
+<body class="min-h-screen font-sans">
 
-        <div class="grid grid-cols-7 gap-1">
-          <% ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].forEach(dia => { %>
-            <label class="flex flex-col items-center">
-              <input type="checkbox" name="dias[]" value="<%= dia %>" class="peer hidden">
-              <div class="w-full py-2 text-center rounded bg-zinc-800 border border-zinc-700 text-xs peer-checked:bg-orange-600 peer-checked:border-orange-500 transition">
-                <%= dia %>
+  <main
+    class="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-10"
+  >
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
+    >
+
+      <div>
+
+        <div class="flex items-center gap-2">
+
+          <h1
+            class="text-2xl md:text-3xl font-black text-white"
+          >
+            Horarios
+          </h1>
+
+
+          <button
+            type="button"
+            onclick="toggleInfoModal()"
+            class="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-orange-500 font-black text-sm flex items-center justify-center transition"
+          >
+            i
+          </button>
+
+        </div>
+
+
+        <p
+          class="text-xs md:text-sm text-zinc-500 mt-1"
+        >
+          Definí los días y horarios de trabajo de cada profesional.
+        </p>
+
+      </div>
+
+
+      <a
+        href="/dashboard"
+        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-sm text-zinc-300 font-bold rounded-xl transition border border-zinc-800"
+      >
+
+        <i class="fas fa-arrow-left"></i>
+
+        Volver al Dashboard
+
+      </a>
+
+    </header>
+
+
+    <!-- =====================================================
+         MENSAJES
+    ====================================================== -->
+
+    <% if (error) { %>
+
+      <div
+        class="mb-5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 text-sm font-bold flex items-start gap-3"
+      >
+
+        <i
+          class="fas fa-circle-exclamation mt-0.5"
+        ></i>
+
+        <span>
+          <%= error %>
+        </span>
+
+      </div>
+
+    <% } %>
+
+
+    <% if (ok) { %>
+
+      <div
+        class="mb-5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-4 text-sm font-bold flex items-start gap-3"
+      >
+
+        <i
+          class="fas fa-circle-check mt-0.5"
+        ></i>
+
+        <span>
+          <%= ok %>
+        </span>
+
+      </div>
+
+    <% } %>
+
+
+    <!-- =====================================================
+         INFORMACIÓN
+    ====================================================== -->
+
+    <section
+      id="infoModal"
+      class="hidden mb-6 bg-zinc-900 border border-orange-500/30 rounded-2xl p-5 shadow-xl"
+    >
+
+      <div
+        class="flex justify-between items-start gap-4"
+      >
+
+        <div>
+
+          <h3
+            class="text-orange-500 font-black mb-2"
+          >
+
+            <i
+              class="fas fa-circle-info mr-1"
+            ></i>
+
+            ¿Cómo funcionan los horarios?
+
+          </h3>
+
+
+          <p
+            class="text-sm text-zinc-300 leading-relaxed"
+          >
+            Seleccioná un profesional, marcá los días que
+            trabaja y configurá su horario.
+
+            Podés utilizar una jornada continua o agregar
+            un segundo horario para jornadas partidas.
+
+            BookBarber evita automáticamente horarios
+            duplicados o superpuestos.
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          onclick="toggleInfoModal()"
+          class="text-zinc-500 hover:text-white"
+        >
+
+          <i class="fas fa-xmark"></i>
+
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         GRID PRINCIPAL
+    ====================================================== -->
+
+    <div
+      class="grid grid-cols-1 lg:grid-cols-[390px_1fr] gap-6"
+    >
+
+      <!-- =================================================
+           CREAR HORARIO
+      ================================================== -->
+
+      <section
+        class="bg-zinc-900 border border-zinc-800 p-5 md:p-6 rounded-2xl shadow-lg h-fit"
+      >
+
+        <div
+          class="flex items-center gap-3 mb-5"
+        >
+
+          <div
+            class="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500"
+          >
+
+            <i class="fas fa-calendar-plus"></i>
+
+          </div>
+
+
+          <div>
+
+            <h2
+              class="text-lg font-black text-white"
+            >
+              Añadir Horario
+            </h2>
+
+
+            <p
+              class="text-xs text-zinc-500"
+            >
+              Configurá una jornada laboral.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <% if (!barberos || barberos.length === 0) { %>
+
+          <div
+            class="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4"
+          >
+
+            <p
+              class="text-sm text-orange-400 font-bold"
+            >
+              Primero necesitás registrar un profesional.
+            </p>
+
+
+            <a
+              href="/staff"
+              class="inline-block mt-3 text-xs font-black text-white underline"
+            >
+              Ir a Staff
+            </a>
+
+          </div>
+
+        <% } else { %>
+
+
+          <form
+            action="/horarios/guardar"
+            method="POST"
+            class="space-y-5"
+            onsubmit="return validarNuevoHorario()"
+          >
+
+            <!-- PROFESIONAL -->
+
+            <div>
+
+              <label
+                class="block text-xs font-bold text-zinc-400 mb-1.5"
+              >
+                Profesional
+              </label>
+
+
+              <select
+                name="barbero_id"
+                required
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+              >
+
+                <option
+                  value=""
+                  disabled
+                  selected
+                >
+                  Seleccionar profesional
+                </option>
+
+
+                <% barberos.forEach(b => { %>
+
+                  <option value="<%= b.id %>">
+
+                    <%= b.nombre %>
+                    ·
+                    <%= b.sucursal_nombre %>
+
+                  </option>
+
+                <% }) %>
+
+              </select>
+
+            </div>
+
+
+            <!-- DÍAS -->
+
+            <div>
+
+              <div
+                class="flex items-center justify-between mb-2"
+              >
+
+                <label
+                  class="text-xs font-bold text-zinc-400"
+                >
+                  Días de trabajo
+                </label>
+
+
+                <button
+                  type="button"
+                  onclick="seleccionarLunesViernes()"
+                  class="text-[10px] text-orange-500 font-black"
+                >
+                  Lun a Vie
+                </button>
+
               </div>
-            </label>
-          <% }) %>
+
+
+              <div
+                class="grid grid-cols-7 gap-1"
+              >
+
+                <%
+                  const diasCortos = [
+                    ['Lun', 'L'],
+                    ['Mar', 'M'],
+                    ['Mie', 'X'],
+                    ['Jue', 'J'],
+                    ['Vie', 'V'],
+                    ['Sab', 'S'],
+                    ['Dom', 'D']
+                  ];
+                %>
+
+
+                <% diasCortos.forEach(dia => { %>
+
+                  <label
+                    class="cursor-pointer"
+                  >
+
+                    <input
+                      type="checkbox"
+                      name="dias"
+                      value="<%= dia[0] %>"
+                      class="peer hidden dia-checkbox"
+                    >
+
+
+                    <div
+                      class="aspect-square flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-black text-zinc-500 peer-checked:bg-orange-600 peer-checked:border-orange-500 peer-checked:text-white transition"
+                    >
+
+                      <%= dia[1] %>
+
+                    </div>
+
+                  </label>
+
+                <% }) %>
+
+              </div>
+
+
+              <p
+                class="text-[10px] text-zinc-600 mt-2"
+              >
+                Podés seleccionar varios días de una sola vez.
+              </p>
+
+            </div>
+
+
+            <!-- PRIMER HORARIO -->
+
+            <div
+              class="bg-black/40 border border-zinc-800 rounded-xl p-4"
+            >
+
+              <div
+                class="flex items-center gap-2 mb-3"
+              >
+
+                <span
+                  class="w-6 h-6 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center text-[10px] font-black"
+                >
+                  1
+                </span>
+
+
+                <p
+                  class="text-xs font-black text-white"
+                >
+                  Primer horario
+                </p>
+
+              </div>
+
+
+              <div
+                class="grid grid-cols-2 gap-3"
+              >
+
+                <div>
+
+                  <label
+                    class="block text-[10px] text-zinc-500 mb-1"
+                  >
+                    Entrada
+                  </label>
+
+
+                  <input
+                    type="time"
+                    id="inicio1"
+                    name="inicio_1"
+                    required
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+                  >
+
+                </div>
+
+
+                <div>
+
+                  <label
+                    class="block text-[10px] text-zinc-500 mb-1"
+                  >
+                    Salida
+                  </label>
+
+
+                  <input
+                    type="time"
+                    id="fin1"
+                    name="fin_1"
+                    required
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+                  >
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- SEGUNDO HORARIO -->
+
+            <div
+              class="bg-black/40 border border-zinc-800 rounded-xl p-4"
+            >
+
+              <div
+                class="flex items-center justify-between gap-3 mb-3"
+              >
+
+                <div
+                  class="flex items-center gap-2"
+                >
+
+                  <span
+                    class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-[10px] font-black"
+                  >
+                    2
+                  </span>
+
+
+                  <div>
+
+                    <p
+                      class="text-xs font-black text-white"
+                    >
+                      Segundo horario
+                    </p>
+
+                    <p
+                      class="text-[9px] text-zinc-600"
+                    >
+                      Opcional
+                    </p>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onclick="limpiarSegundoHorario()"
+                  class="text-[9px] text-zinc-500 hover:text-white"
+                >
+                  Limpiar
+                </button>
+
+              </div>
+
+
+              <div
+                class="grid grid-cols-2 gap-3"
+              >
+
+                <div>
+
+                  <label
+                    class="block text-[10px] text-zinc-500 mb-1"
+                  >
+                    Entrada
+                  </label>
+
+
+                  <input
+                    type="time"
+                    id="inicio2"
+                    name="inicio_2"
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+
+                </div>
+
+
+                <div>
+
+                  <label
+                    class="block text-[10px] text-zinc-500 mb-1"
+                  >
+                    Salida
+                  </label>
+
+
+                  <input
+                    type="time"
+                    id="fin2"
+                    name="fin_2"
+                    class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <p
+                class="text-[10px] text-zinc-600 mt-2"
+              >
+                Ejemplo: 09:00–13:00 y 16:00–20:00.
+              </p>
+
+            </div>
+
+
+            <!-- AVISO -->
+
+            <div
+              class="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3"
+            >
+
+              <p
+                class="text-[10px] text-blue-400 leading-relaxed"
+              >
+
+                <i
+                  class="fas fa-shield-halved mr-1"
+                ></i>
+
+                BookBarber comprobará que los horarios no
+                se dupliquen ni se superpongan.
+
+              </p>
+
+            </div>
+
+
+            <button
+              type="submit"
+              class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 rounded-xl transition text-sm shadow-md shadow-orange-900/20"
+            >
+
+              <i
+                class="fas fa-floppy-disk mr-2"
+              ></i>
+
+              Guardar Horarios
+
+            </button>
+
+          </form>
+
+        <% } %>
+
+      </section>
+
+
+      <!-- =================================================
+           AGENDA ACTUAL
+      ================================================== -->
+
+      <section>
+
+        <div
+          class="flex items-center justify-between gap-4 mb-4"
+        >
+
+          <div>
+
+            <h2
+              class="text-lg font-black text-white"
+            >
+              Agenda Actual
+            </h2>
+
+
+            <p
+              class="text-xs text-zinc-500 mt-1"
+            >
+              Horarios configurados por profesional.
+            </p>
+
+          </div>
+
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <input type="time" name="inicio_1" required class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
-          <input type="time" name="fin_1" required class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
-          <input type="time" name="inicio_2" class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
-          <input type="time" name="fin_2" class="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" style="color-scheme: dark;">
-        </div>
 
-        <button type="submit" class="w-full bg-orange-600 py-3 rounded-lg font-bold text-sm shadow-lg">Guardar Horarios</button>
-      </form>
-    </div>
+        <% if (!barberos || barberos.length === 0) { %>
 
-    <div>
-      <h2 class="text-lg font-bold text-white mb-4">Agenda Actual</h2>
-      <div class="space-y-4">
-        <% 
-          // Lógica para agrupar en el mismo archivo
+          <div
+            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center"
+          >
+
+            <i
+              class="fas fa-calendar-days text-3xl text-zinc-700 mb-3"
+            ></i>
+
+
+            <p
+              class="text-zinc-500 text-sm"
+            >
+              No hay profesionales para mostrar.
+            </p>
+
+          </div>
+
+        <% } %>
+
+
+        <%
           const porSucursal = {};
-          barberos.forEach(b => {
-            if (!porSucursal[b.sucursal_nombre]) porSucursal[b.sucursal_nombre] = [];
-            porSucursal[b.sucursal_nombre].push(b);
+
+          barberos.forEach(barbero => {
+
+            if (!porSucursal[barbero.sucursal_nombre]) {
+
+              porSucursal[
+                barbero.sucursal_nombre
+              ] = [];
+
+            }
+
+            porSucursal[
+              barbero.sucursal_nombre
+            ].push(barbero);
+
           });
         %>
 
-        <% Object.keys(porSucursal).forEach(sucursal => { %>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            <div class="bg-zinc-800 px-4 py-2 text-orange-500 font-bold uppercase text-[10px] tracking-widest">
-              <%= sucursal %>
-            </div>
-            
-            <% porSucursal[sucursal].forEach(barbero => { %>
-              <div id="barbero-<%= barbero.id %>" class="border-t border-zinc-800">
-                <button onclick="toggleBarbero(<%= barbero.id %>)" class="w-full flex justify-between p-4 hover:bg-zinc-800 transition items-center text-sm font-medium">
-                  <%= barbero.nombre %>
-                  <span class="text-zinc-500">⬇️</span>
-                </button>
-                
-                <div class="collapse-content px-4 pb-4 hidden">
-                  <div class="space-y-2">
-                    <% 
-                      const hBarbero = horarios.filter(h => h.barbero_id === barbero.id);
-                      if(hBarbero.length === 0) { %> <p class="text-xs text-zinc-600 italic">Sin horarios.</p> <% }
-                      hBarbero.forEach(h => { 
-                    %>
-                      <div class="flex justify-between items-center bg-zinc-950 p-2.5 rounded text-xs border border-zinc-800">
-                        <span><strong><%= h.dia %>:</strong> <%= h.hora_inicio.substring(0,5) %> - <%= h.hora_fin.substring(0,5) %></span>
-                        <form action="/horarios/eliminar/<%= h.id %>" method="POST">
-                          <button class="text-red-500 px-2">✕</button>
-                        </form>
-                      </div>
-                    <% }) %>
-                  </div>
-                </div>
+
+        <div class="space-y-5">
+
+          <% Object.keys(porSucursal).forEach(sucursal => { %>
+
+            <article
+              class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg"
+            >
+
+              <!-- SUCURSAL -->
+
+              <div
+                class="bg-zinc-800/70 border-b border-zinc-800 px-4 py-3 flex items-center gap-2"
+              >
+
+                <i
+                  class="fas fa-store text-orange-500 text-xs"
+                ></i>
+
+
+                <span
+                  class="text-[10px] font-black uppercase tracking-widest text-orange-400"
+                >
+                  <%= sucursal %>
+                </span>
+
               </div>
-            <% }) %>
-          </div>
-        <% }) %>
-      </div>
+
+
+              <!-- PROFESIONALES -->
+
+              <% porSucursal[sucursal].forEach(barbero => {
+
+                const horariosBarbero =
+                  horarios.filter(
+                    h =>
+                      Number(h.barbero_id) ===
+                      Number(barbero.id)
+                  );
+
+              %>
+
+                <div
+                  id="barbero-<%= barbero.id %>"
+                  class="border-b last:border-b-0 border-zinc-800"
+                >
+
+                  <!-- CABECERA -->
+
+                  <button
+                    type="button"
+                    onclick="toggleBarbero(<%= barbero.id %>)"
+                    class="w-full p-4 flex items-center justify-between gap-4 hover:bg-zinc-800/50 transition"
+                  >
+
+                    <div
+                      class="flex items-center gap-3 min-w-0 text-left"
+                    >
+
+                      <div
+                        class="w-10 h-10 shrink-0 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500"
+                      >
+
+                        <i class="fas fa-user"></i>
+
+                      </div>
+
+
+                      <div class="min-w-0">
+
+                        <p
+                          class="font-black text-white text-sm truncate"
+                        >
+                          <%= barbero.nombre %>
+                        </p>
+
+
+                        <p
+                          class="text-[10px] text-zinc-500 mt-0.5"
+                        >
+                          <%= horariosBarbero.length %>
+                          rango(s) configurado(s)
+
+                          · Turnos cada
+                          <%= barbero.intervalo_minutos || 30 %>
+                          min
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    <i
+                      id="icono-<%= barbero.id %>"
+                      class="fas fa-chevron-down text-zinc-600 transition-transform"
+                    ></i>
+
+                  </button>
+
+
+                  <!-- HORARIOS -->
+
+                  <div
+                    class="collapse-content hidden px-4 pb-4"
+                  >
+
+                    <% if (horariosBarbero.length === 0) { %>
+
+                      <div
+                        class="bg-black/30 border border-zinc-800 rounded-xl p-4 text-center"
+                      >
+
+                        <p
+                          class="text-xs text-zinc-600 italic"
+                        >
+                          Este profesional todavía no tiene horarios.
+                        </p>
+
+                      </div>
+
+                    <% } else { %>
+
+
+                      <div class="space-y-2">
+
+                        <% horariosBarbero.forEach(h => {
+
+                          const inicio =
+                            String(h.hora_inicio)
+                              .substring(0, 5);
+
+                          const fin =
+                            String(h.hora_fin)
+                              .substring(0, 5);
+
+                        %>
+
+                          <div
+                            class="bg-zinc-950 border border-zinc-800 rounded-xl p-3"
+                          >
+
+                            <div
+                              class="flex items-center justify-between gap-3"
+                            >
+
+                              <div>
+
+                                <p
+                                  class="text-xs font-black text-white"
+                                >
+                                  <%= h.dia %>
+                                </p>
+
+
+                                <p
+                                  class="text-sm font-black text-orange-400 mt-1"
+                                >
+
+                                  <i
+                                    class="far fa-clock mr-1"
+                                  ></i>
+
+                                  <%= inicio %>
+                                  –
+                                  <%= fin %>
+
+                                </p>
+
+                              </div>
+
+
+                              <div
+                                class="flex items-center gap-2"
+                              >
+
+                                <button
+                                  type="button"
+
+                                  onclick="openEditModal(this)"
+
+                                  data-id="<%= h.id %>"
+
+                                  data-dia="<%= h.dia %>"
+
+                                  data-inicio="<%= inicio %>"
+
+                                  data-fin="<%= fin %>"
+
+                                  data-barbero="<%= encodeURIComponent(barbero.nombre || '') %>"
+
+                                  class="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center"
+                                >
+
+                                  <i class="fas fa-pen text-xs"></i>
+
+                                </button>
+
+
+                                <form
+                                  action="/horarios/eliminar/<%= h.id %>"
+                                  method="POST"
+                                  onsubmit="return confirm('¿Eliminar este horario de <%= h.dia %>?');"
+                                >
+
+                                  <button
+                                    type="submit"
+                                    class="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 flex items-center justify-center"
+                                  >
+
+                                    <i class="fas fa-trash text-xs"></i>
+
+                                  </button>
+
+                                </form>
+
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        <% }); %>
+
+                      </div>
+
+                    <% } %>
+
+                  </div>
+
+                </div>
+
+              <% }); %>
+
+            </article>
+
+          <% }); %>
+
+        </div>
+
+      </section>
+
     </div>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer
+      class="mt-12 pt-6 border-t border-zinc-900 text-center text-[10px] text-zinc-600"
+    >
+
+      © <%= new Date().getFullYear() %>
+      MedinSur Dev · BookBarber
+
+    </footer>
+
+  </main>
+
+
+  <!-- =====================================================
+       MODAL EDITAR
+  ====================================================== -->
+
+  <div
+    id="editModal"
+    class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+  >
+
+    <div
+      class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 md:p-6 w-full max-w-md shadow-2xl"
+    >
+
+      <div
+        class="flex items-center justify-between mb-5"
+      >
+
+        <div>
+
+          <h3
+            class="text-lg font-black text-white"
+          >
+            Editar Horario
+          </h3>
+
+
+          <p
+            id="editProfesional"
+            class="text-xs text-zinc-500 mt-1"
+          >
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          onclick="closeEditModal()"
+          class="w-9 h-9 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white"
+        >
+
+          <i class="fas fa-xmark"></i>
+
+        </button>
+
+      </div>
+
+
+      <form
+        id="editForm"
+        method="POST"
+        class="space-y-4"
+        onsubmit="return validarEdicion()"
+      >
+
+        <!-- DÍA -->
+
+        <div>
+
+          <label
+            class="block text-xs font-bold text-zinc-400 mb-1.5"
+          >
+            Día
+          </label>
+
+
+          <select
+            id="editDia"
+            name="dia"
+            required
+            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+          >
+
+            <option value="Lunes">
+              Lunes
+            </option>
+
+            <option value="Martes">
+              Martes
+            </option>
+
+            <option value="Miércoles">
+              Miércoles
+            </option>
+
+            <option value="Jueves">
+              Jueves
+            </option>
+
+            <option value="Viernes">
+              Viernes
+            </option>
+
+            <option value="Sábado">
+              Sábado
+            </option>
+
+            <option value="Domingo">
+              Domingo
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- HORAS -->
+
+        <div
+          class="grid grid-cols-2 gap-3"
+        >
+
+          <div>
+
+            <label
+              class="block text-xs font-bold text-zinc-400 mb-1.5"
+            >
+              Entrada
+            </label>
+
+
+            <input
+              type="time"
+              id="editInicio"
+              name="hora_inicio"
+              required
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label
+              class="block text-xs font-bold text-zinc-400 mb-1.5"
+            >
+              Salida
+            </label>
+
+
+            <input
+              type="time"
+              id="editFin"
+              name="hora_fin"
+              required
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-orange-500"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3"
+        >
+
+          <p
+            class="text-[10px] text-blue-400 leading-relaxed"
+          >
+
+            BookBarber comprobará que el nuevo horario
+            no se superponga con otro rango existente.
+
+          </p>
+
+        </div>
+
+
+        <!-- BOTONES -->
+
+        <div
+          class="grid grid-cols-2 gap-2 pt-2"
+        >
+
+          <button
+            type="button"
+            onclick="closeEditModal()"
+            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-bold"
+          >
+            Cancelar
+          </button>
+
+
+          <button
+            type="submit"
+            class="bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl text-sm font-black"
+          >
+            Actualizar
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
   </div>
 
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
   <script>
-    function toggleBarbero(id) {
-      const el = document.getElementById('barbero-' + id).querySelector('.collapse-content');
-      el.classList.toggle('hidden');
+
+    function toggleInfoModal() {
+
+      document
+        .getElementById('infoModal')
+        .classList.toggle('hidden');
+
     }
+
+
+    function toggleBarbero(id) {
+
+      const contenedor =
+        document.getElementById(
+          'barbero-' + id
+        );
+
+
+      const contenido =
+        contenedor.querySelector(
+          '.collapse-content'
+        );
+
+
+      const icono =
+        document.getElementById(
+          'icono-' + id
+        );
+
+
+      contenido.classList.toggle(
+        'hidden'
+      );
+
+
+      icono.classList.toggle(
+        'rotate-180'
+      );
+
+    }
+
+
+    function seleccionarLunesViernes() {
+
+      const checks =
+        document.querySelectorAll(
+          '.dia-checkbox'
+        );
+
+
+      checks.forEach(
+        (checkbox, index) => {
+
+          checkbox.checked =
+            index <= 4;
+
+        }
+      );
+
+    }
+
+
+    function limpiarSegundoHorario() {
+
+      document
+        .getElementById('inicio2')
+        .value = '';
+
+
+      document
+        .getElementById('fin2')
+        .value = '';
+
+    }
+
+
+    function validarNuevoHorario() {
+
+      const dias =
+        document.querySelectorAll(
+          '.dia-checkbox:checked'
+        );
+
+
+      if (dias.length === 0) {
+
+        alert(
+          'Seleccioná al menos un día.'
+        );
+
+        return false;
+      }
+
+
+      const inicio1 =
+        document.getElementById(
+          'inicio1'
+        ).value;
+
+
+      const fin1 =
+        document.getElementById(
+          'fin1'
+        ).value;
+
+
+      const inicio2 =
+        document.getElementById(
+          'inicio2'
+        ).value;
+
+
+      const fin2 =
+        document.getElementById(
+          'fin2'
+        ).value;
+
+
+      if (
+        !inicio1 ||
+        !fin1 ||
+        inicio1 >= fin1
+      ) {
+
+        alert(
+          'Revisá el primer horario. La salida debe ser posterior a la entrada.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        (inicio2 && !fin2) ||
+        (!inicio2 && fin2)
+      ) {
+
+        alert(
+          'Completá las dos horas del segundo horario.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        inicio2 &&
+        fin2
+      ) {
+
+        if (
+          inicio2 >= fin2
+        ) {
+
+          alert(
+            'Revisá el segundo horario.'
+          );
+
+          return false;
+        }
+
+
+        const seSuperponen =
+          inicio1 < fin2 &&
+          fin1 > inicio2;
+
+
+        if (seSuperponen) {
+
+          alert(
+            'El primer y segundo horario se superponen.'
+          );
+
+          return false;
+        }
+
+      }
+
+
+      return true;
+
+    }
+
+
+    function openEditModal(button) {
+
+      const id =
+        button.dataset.id;
+
+
+      const dia =
+        button.dataset.dia;
+
+
+      const inicio =
+        button.dataset.inicio;
+
+
+      const fin =
+        button.dataset.fin;
+
+
+      const profesional =
+        decodeURIComponent(
+          button.dataset.barbero || ''
+        );
+
+
+      document
+        .getElementById('editForm')
+        .action =
+          `/horarios/editar/${id}`;
+
+
+      document
+        .getElementById('editDia')
+        .value =
+          dia;
+
+
+      document
+        .getElementById('editInicio')
+        .value =
+          inicio;
+
+
+      document
+        .getElementById('editFin')
+        .value =
+          fin;
+
+
+      document
+        .getElementById(
+          'editProfesional'
+        )
+        .textContent =
+          profesional;
+
+
+      document
+        .getElementById('editModal')
+        .classList.remove('hidden');
+
+
+      document.body.style.overflow =
+        'hidden';
+
+    }
+
+
+    function closeEditModal() {
+
+      document
+        .getElementById('editModal')
+        .classList.add('hidden');
+
+
+      document.body.style.overflow =
+        '';
+
+    }
+
+
+    function validarEdicion() {
+
+      const inicio =
+        document.getElementById(
+          'editInicio'
+        ).value;
+
+
+      const fin =
+        document.getElementById(
+          'editFin'
+        ).value;
+
+
+      if (
+        !inicio ||
+        !fin ||
+        inicio >= fin
+      ) {
+
+        alert(
+          'La hora de salida debe ser posterior a la entrada.'
+        );
+
+        return false;
+      }
+
+
+      return true;
+
+    }
+
+
+    document.addEventListener(
+      'keydown',
+      function(event) {
+
+        if (
+          event.key === 'Escape'
+        ) {
+
+          closeEditModal();
+
+        }
+
+      }
+    );
+
   </script>
+
 </body>
+
 </html>
