@@ -48,6 +48,13 @@ const db = mysql.createPool({
 }).promise();
 
 // ======================================================
+// PRECIOS BOOKBARBER
+// ======================================================
+
+const PRECIO_BASE = 20000;
+const PRECIO_SUCURSAL_EXTRA = 5000;
+
+// ======================================================
 // SUBIDA DE IMÁGENES
 // ======================================================
 
@@ -302,6 +309,126 @@ async function barberoPerteneceUsuario(
 }
 
 // ======================================================
+// FUNCIONES DE HORARIOS
+// ======================================================
+
+const DIAS_VALIDOS = [
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+  'Domingo'
+];
+
+const MAPA_DIAS = {
+  Lun: 'Lunes',
+  Mar: 'Martes',
+  Mie: 'Miércoles',
+  Mié: 'Miércoles',
+  Jue: 'Jueves',
+  Vie: 'Viernes',
+  Sab: 'Sábado',
+  Sáb: 'Sábado',
+  Dom: 'Domingo'
+};
+
+function normalizarDia(dia) {
+
+  const diaCompleto =
+    MAPA_DIAS[dia] || dia;
+
+  return DIAS_VALIDOS.includes(diaCompleto)
+    ? diaCompleto
+    : null;
+}
+
+function horaValida(hora) {
+
+  if (!hora) {
+    return false;
+  }
+
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(
+    hora.substring(0, 5)
+  );
+}
+
+function rangoValido(inicio, fin) {
+
+  if (
+    !horaValida(inicio) ||
+    !horaValida(fin)
+  ) {
+    return false;
+  }
+
+  return inicio.substring(0, 5) <
+         fin.substring(0, 5);
+}
+
+function rangosSeSuperponen(
+  inicioA,
+  finA,
+  inicioB,
+  finB
+) {
+
+  return (
+    inicioA < finB &&
+    finA > inicioB
+  );
+}
+
+async function existeSuperposicionHorario(
+  connection,
+  barberoId,
+  dia,
+  horaInicio,
+  horaFin,
+  excluirId = null
+) {
+
+  let sql = `
+    SELECT id
+    FROM horarios
+    WHERE barbero_id = ?
+    AND dia = ?
+    AND hora_inicio < ?
+    AND hora_fin > ?
+  `;
+
+  const params = [
+    barberoId,
+    dia,
+    horaFin,
+    horaInicio
+  ];
+
+  if (excluirId) {
+
+    sql += `
+      AND id <> ?
+    `;
+
+    params.push(excluirId);
+  }
+
+  sql += `
+    LIMIT 1
+  `;
+
+  const [rows] =
+    await connection.query(
+      sql,
+      params
+    );
+
+  return rows.length > 0;
+}
+
+// ======================================================
 // RUTAS BÁSICAS
 // ======================================================
 
@@ -400,13 +527,13 @@ app.get(
         );
 
       const baseSuscripcion =
-        15000;
+        PRECIO_BASE;
 
       const extras =
         Math.max(
           0,
           sucursales.length - 1
-        ) * 5000;
+        ) * PRECIO_SUCURSAL_EXTRA;
 
       const totalMensual =
         baseSuscripcion + extras;
@@ -417,7 +544,10 @@ app.get(
           user,
           sucursales,
           diasRestantes,
-          totalMensual
+          totalMensual,
+          baseSuscripcion,
+          precioSucursalExtra:
+            PRECIO_SUCURSAL_EXTRA
         }
       );
 
@@ -1260,7 +1390,6 @@ app.post(
 
       await connection.beginTransaction();
 
-      // horarios no tiene FK con ON DELETE CASCADE
       await connection.query(
         `
         DELETE FROM horarios
@@ -1590,6 +1719,8 @@ app.get(
           SELECT
             b.id,
             b.nombre,
+            b.sucursal_id,
+            b.intervalo_minutos,
             s.nombre AS sucursal_nombre
 
           FROM barberos b
@@ -1599,7 +1730,9 @@ app.get(
 
           WHERE s.usuario_id = ?
 
-          ORDER BY b.nombre ASC
+          ORDER BY
+            s.nombre ASC,
+            b.nombre ASC
           `,
           [req.session.userId]
         );
@@ -1610,6 +1743,8 @@ app.get(
           SELECT
             h.*,
             b.nombre AS barbero_nombre,
+            b.intervalo_minutos,
+            s.id AS sucursal_id,
             s.nombre AS sucursal_nombre
 
           FROM horarios h
@@ -1622,17 +1757,20 @@ app.get(
 
           WHERE s.usuario_id = ?
 
-          ORDER BY FIELD(
-            h.dia,
-            'Lunes',
-            'Martes',
-            'Miércoles',
-            'Jueves',
-            'Viernes',
-            'Sábado',
-            'Domingo'
-          ),
-          h.hora_inicio ASC
+          ORDER BY
+            s.nombre ASC,
+            b.nombre ASC,
+            FIELD(
+              h.dia,
+              'Lunes',
+              'Martes',
+              'Miércoles',
+              'Jueves',
+              'Viernes',
+              'Sábado',
+              'Domingo'
+            ),
+            h.hora_inicio ASC
           `,
           [req.session.userId]
         );
@@ -1642,13 +1780,18 @@ app.get(
         {
           user,
           barberos,
-          horarios
+          horarios,
+          error: req.query.error || null,
+          ok: req.query.ok || null
         }
       );
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error cargando horarios:',
+        error
+      );
 
       res.status(500).send(
         'Error cargando horarios: ' +
@@ -1658,10 +1801,16 @@ app.get(
   }
 );
 
+// ======================================================
+// GUARDAR HORARIOS
+// ======================================================
+
 app.post(
   '/horarios/guardar',
   isAuth,
   async (req, res) => {
+
+    let connection;
 
     try {
 
@@ -1682,8 +1831,11 @@ app.post(
 
       if (!autorizado) {
 
-        return res.status(403).send(
-          'Barbero no autorizado.'
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'El profesional seleccionado no es válido.'
+          )
         );
       }
 
@@ -1700,68 +1852,178 @@ app.post(
           [dias];
       }
 
+      diasSeleccionados =
+        diasSeleccionados
+          .map(normalizarDia)
+          .filter(Boolean);
+
+      diasSeleccionados = [
+        ...new Set(
+          diasSeleccionados
+        )
+      ];
+
       if (
         diasSeleccionados.length === 0
       ) {
 
-        return res.status(400).send(
-          'Debe seleccionar al menos un día.'
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'Seleccioná al menos un día de trabajo.'
+          )
         );
       }
 
-      const mapaDias = {
-        Lun: 'Lunes',
-        Mar: 'Martes',
-        Mie: 'Miércoles',
-        Mié: 'Miércoles',
-        Jue: 'Jueves',
-        Vie: 'Viernes',
-        Sab: 'Sábado',
-        Sáb: 'Sábado',
-        Dom: 'Domingo'
-      };
+      if (
+        !rangoValido(
+          inicio_1,
+          fin_1
+        )
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'El primer horario no es válido. La hora de salida debe ser posterior a la hora de entrada.'
+          )
+        );
+      }
+
+      const segundoIncompleto =
+        (
+          inicio_2 &&
+          !fin_2
+        ) ||
+        (
+          !inicio_2 &&
+          fin_2
+        );
+
+      if (segundoIncompleto) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'Completá tanto el inicio como el fin del segundo horario.'
+          )
+        );
+      }
+
+      const tieneSegundoRango =
+        Boolean(
+          inicio_2 &&
+          fin_2
+        );
+
+      if (
+        tieneSegundoRango &&
+        !rangoValido(
+          inicio_2,
+          fin_2
+        )
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'El segundo horario no es válido. La hora de salida debe ser posterior a la hora de entrada.'
+          )
+        );
+      }
+
+      if (
+        tieneSegundoRango &&
+        rangosSeSuperponen(
+          inicio_1,
+          fin_1,
+          inicio_2,
+          fin_2
+        )
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'El primer y segundo horario se superponen.'
+          )
+        );
+      }
+
+      connection =
+        await db.getConnection();
+
+      await connection.beginTransaction();
 
       for (
-        const diaSeleccionado
+        const dia
         of diasSeleccionados
       ) {
 
-        const diaCompleto =
-          mapaDias[diaSeleccionado] ||
-          diaSeleccionado;
+        const existePrimerRango =
+          await existeSuperposicionHorario(
+            connection,
+            barbero_id,
+            dia,
+            inicio_1,
+            fin_1
+          );
 
-        if (
-          inicio_1 &&
-          fin_1
-        ) {
+        if (existePrimerRango) {
 
-          await db.query(
-            `
-            INSERT INTO horarios
-            (
-              barbero_id,
-              dia,
-              hora_inicio,
-              hora_fin
-            )
-
-            VALUES (?, ?, ?, ?)
-            `,
-            [
-              barbero_id,
-              diaCompleto,
-              inicio_1,
-              fin_1
-            ]
+          throw new Error(
+            `${dia}: el horario ${inicio_1} - ${fin_1} se superpone con otro horario ya cargado.`
           );
         }
 
-        if (
-          inicio_2 &&
-          fin_2
-        ) {
+        if (tieneSegundoRango) {
 
-          await db.query(
+          const existeSegundoRango =
+            await existeSuperposicionHorario(
+              connection,
+              barbero_id,
+              dia,
+              inicio_2,
+              fin_2
+            );
+
+          if (existeSegundoRango) {
+
+            throw new Error(
+              `${dia}: el horario ${inicio_2} - ${fin_2} se superpone con otro horario ya cargado.`
+            );
+          }
+        }
+      }
+
+      for (
+        const dia
+        of diasSeleccionados
+      ) {
+
+        await connection.query(
+          `
+          INSERT INTO horarios
+          (
+            barbero_id,
+            dia,
+            hora_inicio,
+            hora_fin
+          )
+
+          VALUES (?, ?, ?, ?)
+          `,
+          [
+            barbero_id,
+            dia,
+            inicio_1,
+            fin_1
+          ]
+        );
+
+        if (tieneSegundoRango) {
+
+          await connection.query(
             `
             INSERT INTO horarios
             (
@@ -1775,7 +2037,7 @@ app.post(
             `,
             [
               barbero_id,
-              diaCompleto,
+              dia,
               inicio_2,
               fin_2
             ]
@@ -1783,19 +2045,48 @@ app.post(
         }
       }
 
-      res.redirect('/horarios');
+      await connection.commit();
+
+      connection.release();
+      connection = null;
+
+      res.redirect(
+        '/horarios?ok=' +
+        encodeURIComponent(
+          'Horarios guardados correctamente.'
+        )
+      );
 
     } catch (error) {
 
-      console.error(error);
+      if (connection) {
 
-      res.status(500).send(
-        'Error guardando horarios: ' +
-        error.message
+        try {
+          await connection.rollback();
+        } catch (_) {}
+
+        connection.release();
+      }
+
+      console.error(
+        'Error guardando horarios:',
+        error
+      );
+
+      res.redirect(
+        '/horarios?error=' +
+        encodeURIComponent(
+          error.message ||
+          'No se pudieron guardar los horarios.'
+        )
       );
     }
   }
 );
+
+// ======================================================
+// EDITAR HORARIO
+// ======================================================
 
 app.post(
   '/horarios/editar/:id',
@@ -1804,11 +2095,103 @@ app.post(
 
     try {
 
+      const horarioId =
+        req.params.id;
+
       const {
         dia,
         hora_inicio,
         hora_fin
       } = req.body;
+
+      const diaNormalizado =
+        normalizarDia(dia);
+
+      if (!diaNormalizado) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'El día seleccionado no es válido.'
+          )
+        );
+      }
+
+      if (
+        !rangoValido(
+          hora_inicio,
+          hora_fin
+        )
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'La hora de salida debe ser posterior a la hora de entrada.'
+          )
+        );
+      }
+
+      const [horariosActuales] =
+        await db.query(
+          `
+          SELECT
+            h.id,
+            h.barbero_id
+
+          FROM horarios h
+
+          INNER JOIN barberos b
+            ON h.barbero_id = b.id
+
+          INNER JOIN sucursales s
+            ON b.sucursal_id = s.id
+
+          WHERE h.id = ?
+          AND s.usuario_id = ?
+
+          LIMIT 1
+          `,
+          [
+            horarioId,
+            req.session.userId
+          ]
+        );
+
+      if (
+        horariosActuales.length === 0
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'Horario no encontrado.'
+          )
+        );
+      }
+
+      const barberoId =
+        horariosActuales[0].barbero_id;
+
+      const existeConflicto =
+        await existeSuperposicionHorario(
+          db,
+          barberoId,
+          diaNormalizado,
+          hora_inicio,
+          hora_fin,
+          horarioId
+        );
+
+      if (existeConflicto) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'Ese horario se superpone con otro rango ya cargado para el profesional.'
+          )
+        );
+      }
 
       await db.query(
         `
@@ -1829,27 +2212,41 @@ app.post(
         AND s.usuario_id = ?
         `,
         [
-          dia,
+          diaNormalizado,
           hora_inicio,
           hora_fin,
-          req.params.id,
+          horarioId,
           req.session.userId
         ]
       );
 
-      res.redirect('/horarios');
+      res.redirect(
+        '/horarios?ok=' +
+        encodeURIComponent(
+          'Horario actualizado correctamente.'
+        )
+      );
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error editando horario:',
+        error
+      );
 
-      res.status(500).send(
-        'Error editando horario: ' +
-        error.message
+      res.redirect(
+        '/horarios?error=' +
+        encodeURIComponent(
+          'No se pudo editar el horario.'
+        )
       );
     }
   }
 );
+
+// ======================================================
+// ELIMINAR HORARIO
+// ======================================================
 
 app.post(
   '/horarios/eliminar/:id',
@@ -1858,36 +2255,59 @@ app.post(
 
     try {
 
-      await db.query(
-        `
-        DELETE h
+      const [resultado] =
+        await db.query(
+          `
+          DELETE h
 
-        FROM horarios h
+          FROM horarios h
 
-        INNER JOIN barberos b
-          ON h.barbero_id = b.id
+          INNER JOIN barberos b
+            ON h.barbero_id = b.id
 
-        INNER JOIN sucursales s
-          ON b.sucursal_id = s.id
+          INNER JOIN sucursales s
+            ON b.sucursal_id = s.id
 
-        WHERE h.id = ?
-        AND s.usuario_id = ?
-        `,
-        [
-          req.params.id,
-          req.session.userId
-        ]
+          WHERE h.id = ?
+          AND s.usuario_id = ?
+          `,
+          [
+            req.params.id,
+            req.session.userId
+          ]
+        );
+
+      if (
+        resultado.affectedRows === 0
+      ) {
+
+        return res.redirect(
+          '/horarios?error=' +
+          encodeURIComponent(
+            'Horario no encontrado.'
+          )
+        );
+      }
+
+      res.redirect(
+        '/horarios?ok=' +
+        encodeURIComponent(
+          'Horario eliminado.'
+        )
       );
-
-      res.redirect('/horarios');
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        'Error eliminando horario:',
+        error
+      );
 
-      res.status(500).send(
-        'Error eliminando horario: ' +
-        error.message
+      res.redirect(
+        '/horarios?error=' +
+        encodeURIComponent(
+          'No se pudo eliminar el horario.'
+        )
       );
     }
   }
@@ -2684,7 +3104,11 @@ app.get(
       res.render(
         'admin',
         {
-          usuarios
+          usuarios,
+          precioBase:
+            PRECIO_BASE,
+          precioSucursalExtra:
+            PRECIO_SUCURSAL_EXTRA
         }
       );
 
