@@ -851,6 +851,24 @@
   </main>
 
 
+  <% if (reservaOk && turnoConfirmado) { %>
+
+  <script>
+    // La confirmación se muestra una sola vez.
+    // Limpiamos ?reserva=ok&turno=... de la URL para que,
+    // al recargar, vuelva a la página normal de reservas.
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(
+        {},
+        document.title,
+        '/b/<%= sucursal.id %>'
+      );
+    }
+  </script>
+
+  <% } %>
+
+
   <% if (!(reservaOk && turnoConfirmado)) { %>
 
   <script>
