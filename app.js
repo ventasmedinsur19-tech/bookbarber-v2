@@ -411,7 +411,8 @@ async function validarDisponibilidadTurno({
   servicioId,
   fecha,
   hora,
-  userId = null
+  userId = null,
+  connection = db
 }) {
   if (!barberoId || !servicioId || !fecha || !hora) {
     return {
@@ -475,7 +476,7 @@ async function validarDisponibilidadTurno({
 
   sqlDatos += ` LIMIT 1 `;
 
-  const [datos] = await db.query(
+  const [datos] = await connection.query(
     sqlDatos,
     paramsDatos
   );
@@ -527,7 +528,7 @@ async function validarDisponibilidadTurno({
     };
   }
 
-  const [rangosLaborales] = await db.query(
+  const [rangosLaborales] = await connection.query(
     `
     SELECT
       hora_inicio,
@@ -569,7 +570,7 @@ async function validarDisponibilidadTurno({
     };
   }
 
-  const [turnosExistentes] = await db.query(
+  const [turnosExistentes] = await connection.query(
     `
     SELECT
       t.id,
@@ -2729,34 +2730,245 @@ app.get(
 // RESERVA PÚBLICA
 // ======================================================
 
+function fechaValidaISO(fecha) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(fecha || ''));
+}
+
+function horaActualArgentinaMinutos() {
+  const partes = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Cordoba',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(new Date());
+
+  const datos = {};
+
+  partes.forEach(parte => {
+    if (parte.type !== 'literal') {
+      datos[parte.type] = parte.value;
+    }
+  });
+
+  return Number(datos.hour) * 60 + Number(datos.minute);
+}
+
+function sumarDiasFechaISO(fecha, diasASumar) {
+  const [anio, mes, dia] = String(fecha).split('-').map(Number);
+  const fechaUTC = new Date(Date.UTC(anio, mes - 1, dia, 12, 0, 0));
+  fechaUTC.setUTCDate(fechaUTC.getUTCDate() + diasASumar);
+  return fechaUTC.toISOString().slice(0, 10);
+}
+
+function minutosAHora(minutosTotales) {
+  const horas = Math.floor(minutosTotales / 60);
+  const minutos = minutosTotales % 60;
+  return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+}
+
+async function obtenerHorariosDisponiblesPublicos({
+  sucursalId,
+  barberoId,
+  servicioId,
+  fecha,
+  connection = db
+}) {
+  if (!fechaValidaISO(fecha)) {
+    return {
+      ok: false,
+      mensaje: 'La fecha seleccionada no es válida.',
+      horarios: []
+    };
+  }
+
+  const hoy = fechaHoyArgentina();
+  const fechaMaxima = sumarDiasFechaISO(hoy, 60);
+
+  if (fecha < hoy) {
+    return {
+      ok: false,
+      mensaje: 'No se pueden reservar turnos en una fecha pasada.',
+      horarios: []
+    };
+  }
+
+  if (fecha > fechaMaxima) {
+    return {
+      ok: false,
+      mensaje: 'Solo se pueden consultar turnos de los próximos 60 días.',
+      horarios: []
+    };
+  }
+
+  const [datos] = await connection.query(
+    `
+    SELECT
+      b.id AS barbero_id,
+      b.sucursal_id,
+      b.intervalo_minutos,
+      ser.id AS servicio_id,
+      ser.duracion_minutos
+    FROM barberos b
+    INNER JOIN servicios ser
+      ON ser.id = ?
+      AND ser.sucursal_id = b.sucursal_id
+    WHERE b.id = ?
+    AND b.sucursal_id = ?
+    LIMIT 1
+    `,
+    [
+      servicioId,
+      barberoId,
+      sucursalId
+    ]
+  );
+
+  if (datos.length === 0) {
+    return {
+      ok: false,
+      mensaje: 'El profesional o servicio no pertenece a esta sucursal.',
+      horarios: []
+    };
+  }
+
+  const intervalo = Number(datos[0].intervalo_minutos || 30);
+  const duracion = Number(datos[0].duracion_minutos || 30);
+  const diaSemana = diaEspanolDesdeFecha(fecha);
+
+  const [rangosLaborales] = await connection.query(
+    `
+    SELECT hora_inicio, hora_fin
+    FROM horarios
+    WHERE barbero_id = ?
+    AND dia = ?
+    ORDER BY hora_inicio ASC
+    `,
+    [
+      barberoId,
+      diaSemana
+    ]
+  );
+
+  if (rangosLaborales.length === 0) {
+    return {
+      ok: true,
+      mensaje: 'El profesional no atiende ese día.',
+      horarios: []
+    };
+  }
+
+  const [turnosExistentes] = await connection.query(
+    `
+    SELECT
+      t.hora,
+      ser.duracion_minutos
+    FROM turnos t
+    INNER JOIN servicios ser
+      ON t.servicio_id = ser.id
+    WHERE t.barbero_id = ?
+    AND t.fecha = ?
+    AND t.estado IN ('pendiente', 'exito')
+    `,
+    [
+      barberoId,
+      fecha
+    ]
+  );
+
+  const ocupados = turnosExistentes
+    .map(turno => {
+      const inicio = minutosDesdeHora(turno.hora);
+      const duracionTurno = Number(turno.duracion_minutos || 30);
+
+      if (inicio === null) {
+        return null;
+      }
+
+      return {
+        inicio,
+        fin: inicio + duracionTurno
+      };
+    })
+    .filter(Boolean);
+
+  const ahoraMinutos = fecha === hoy
+    ? horaActualArgentinaMinutos()
+    : null;
+
+  const horarios = [];
+
+  for (const rango of rangosLaborales) {
+    const inicioLaboral = minutosDesdeHora(rango.hora_inicio);
+    const finLaboral = minutosDesdeHora(rango.hora_fin);
+
+    if (inicioLaboral === null || finLaboral === null) {
+      continue;
+    }
+
+    for (
+      let inicio = inicioLaboral;
+      inicio + duracion <= finLaboral;
+      inicio += intervalo
+    ) {
+      if (ahoraMinutos !== null && inicio <= ahoraMinutos) {
+        continue;
+      }
+
+      const fin = inicio + duracion;
+
+      const conflicto = ocupados.some(turno =>
+        inicio < turno.fin && fin > turno.inicio
+      );
+
+      if (!conflicto) {
+        horarios.push(minutosAHora(inicio));
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    mensaje: horarios.length > 0
+      ? null
+      : 'No quedan horarios disponibles para esa combinación.',
+    horarios: [...new Set(horarios)],
+    diaSemana,
+    duracion
+  };
+}
+
 app.get(
   '/b/:id',
   async (req, res) => {
     try {
-      const sucursalId =
-        req.params.id;
+      const sucursalId = req.params.id;
 
       const [sucursales] = await db.query(
         `
-        SELECT *
-        FROM sucursales
-        WHERE id = ?
+        SELECT s.*
+        FROM sucursales s
+        INNER JOIN usuarios u
+          ON s.usuario_id = u.id
+        WHERE s.id = ?
+        AND u.estado <> 'bloqueado'
         LIMIT 1
         `,
         [sucursalId]
       );
 
-      if (
-        sucursales.length === 0
-      ) {
+      if (sucursales.length === 0) {
         return res.status(404).send(
-          'Barbería no encontrada.'
+          'Barbería no encontrada o temporalmente no disponible.'
         );
       }
 
       const [barberos] = await db.query(
         `
-        SELECT *
+        SELECT
+          id,
+          nombre,
+          foto_url,
+          intervalo_minutos
         FROM barberos
         WHERE sucursal_id = ?
         ORDER BY nombre ASC
@@ -2766,7 +2978,11 @@ app.get(
 
       const [servicios] = await db.query(
         `
-        SELECT *
+        SELECT
+          id,
+          nombre,
+          precio,
+          duracion_minutos
         FROM servicios
         WHERE sucursal_id = ?
         ORDER BY nombre ASC
@@ -2774,13 +2990,47 @@ app.get(
         [sucursalId]
       );
 
+      const [horarios] = await db.query(
+        `
+        SELECT
+          h.dia,
+          h.hora_inicio,
+          h.hora_fin,
+          b.id AS barbero_id,
+          b.nombre AS barbero_nombre
+        FROM horarios h
+        INNER JOIN barberos b
+          ON h.barbero_id = b.id
+        WHERE b.sucursal_id = ?
+        ORDER BY
+          b.nombre ASC,
+          FIELD(
+            h.dia,
+            'Lunes',
+            'Martes',
+            'Miércoles',
+            'Jueves',
+            'Viernes',
+            'Sábado',
+            'Domingo'
+          ),
+          h.hora_inicio ASC
+        `,
+        [sucursalId]
+      );
+
       res.render(
         'reserva_publica',
         {
-          sucursal:
-            sucursales[0],
+          sucursal: sucursales[0],
           barberos,
-          servicios
+          servicios,
+          horarios,
+          hoy: fechaHoyArgentina(),
+          fechaMaxima: sumarDiasFechaISO(fechaHoyArgentina(), 60),
+          error: req.query.error || null,
+          reservaOk: req.query.reserva === 'ok',
+          turnoId: req.query.turno || null
         }
       );
     } catch (error) {
@@ -2793,6 +3043,227 @@ app.get(
         'Error cargando barbería: ' +
         error.message
       );
+    }
+  }
+);
+
+app.get(
+  '/b/:id/disponibilidad',
+  async (req, res) => {
+    try {
+      const sucursalId = req.params.id;
+      const {
+        barbero_id,
+        servicio_id,
+        fecha
+      } = req.query;
+
+      if (!barbero_id || !servicio_id || !fecha) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: 'Seleccioná servicio, profesional y fecha.',
+          horarios: []
+        });
+      }
+
+      const resultado = await obtenerHorariosDisponiblesPublicos({
+        sucursalId,
+        barberoId: barbero_id,
+        servicioId: servicio_id,
+        fecha
+      });
+
+      return res.status(resultado.ok ? 200 : 400).json(resultado);
+    } catch (error) {
+      console.error(
+        'Error consultando disponibilidad pública:',
+        error
+      );
+
+      return res.status(500).json({
+        ok: false,
+        mensaje: 'No pudimos consultar los horarios disponibles.',
+        horarios: []
+      });
+    }
+  }
+);
+
+app.post(
+  '/b/:id/reservar',
+  async (req, res) => {
+    let connection;
+    let lockTomado = false;
+
+    try {
+      const sucursalId = req.params.id;
+      const {
+        barbero_id,
+        servicio_id,
+        cliente_nombre,
+        cliente_whatsapp,
+        fecha,
+        hora
+      } = req.body;
+
+      if (
+        !barbero_id ||
+        !servicio_id ||
+        !cliente_nombre ||
+        !cliente_nombre.trim() ||
+        !cliente_whatsapp ||
+        !cliente_whatsapp.trim() ||
+        !fecha ||
+        !hora
+      ) {
+        return res.redirect(
+          `/b/${sucursalId}?error=` +
+          encodeURIComponent(
+            'Completá todos los datos para confirmar la reserva.'
+          )
+        );
+      }
+
+      const [sucursales] = await db.query(
+        `
+        SELECT s.id
+        FROM sucursales s
+        INNER JOIN usuarios u
+          ON s.usuario_id = u.id
+        WHERE s.id = ?
+        AND u.estado <> 'bloqueado'
+        LIMIT 1
+        `,
+        [sucursalId]
+      );
+
+      if (sucursales.length === 0) {
+        return res.status(404).send(
+          'Barbería no encontrada o temporalmente no disponible.'
+        );
+      }
+
+      connection = await db.getConnection();
+
+      const lockKey = `bb:${sucursalId}:${barbero_id}:${fecha}`;
+      const [lockRows] = await connection.query(
+        `SELECT GET_LOCK(?, 5) AS tomado`,
+        [lockKey]
+      );
+
+      if (!lockRows[0] || Number(lockRows[0].tomado) !== 1) {
+        throw new Error(
+          'No pudimos confirmar el horario en este momento. Intentá nuevamente.'
+        );
+      }
+
+      lockTomado = true;
+      await connection.beginTransaction();
+
+      const disponibilidad = await validarDisponibilidadTurno({
+        barberoId: barbero_id,
+        servicioId: servicio_id,
+        fecha,
+        hora,
+        connection
+      });
+
+      if (!disponibilidad.ok) {
+        await connection.rollback();
+
+        return res.redirect(
+          `/b/${sucursalId}?error=` +
+          encodeURIComponent(
+            disponibilidad.mensaje
+          )
+        );
+      }
+
+      if (Number(disponibilidad.sucursalId) !== Number(sucursalId)) {
+        await connection.rollback();
+
+        return res.redirect(
+          `/b/${sucursalId}?error=` +
+          encodeURIComponent(
+            'El profesional o servicio seleccionado no pertenece a esta sucursal.'
+          )
+        );
+      }
+
+      const [resultado] = await connection.query(
+        `
+        INSERT INTO turnos
+        (
+          barbero_id,
+          servicio_id,
+          cliente_nombre,
+          cliente_whatsapp,
+          fecha,
+          hora,
+          fecha_hora,
+          estado
+        )
+        VALUES
+        (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          CONCAT(?, ' ', ?),
+          'pendiente'
+        )
+        `,
+        [
+          barbero_id,
+          servicio_id,
+          cliente_nombre.trim(),
+          cliente_whatsapp.trim(),
+          fecha,
+          hora,
+          fecha,
+          hora
+        ]
+      );
+
+      await connection.commit();
+
+      return res.redirect(
+        `/b/${sucursalId}?reserva=ok&turno=${resultado.insertId}`
+      );
+    } catch (error) {
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch (_) {}
+      }
+
+      console.error(
+        'Error creando reserva pública:',
+        error
+      );
+
+      return res.redirect(
+        `/b/${req.params.id}?error=` +
+        encodeURIComponent(
+          error.message ||
+          'No pudimos confirmar la reserva.'
+        )
+      );
+    } finally {
+      if (connection) {
+        if (lockTomado) {
+          try {
+            await connection.query(
+              `SELECT RELEASE_LOCK(?)`,
+              [`bb:${req.params.id}:${req.body.barbero_id}:${req.body.fecha}`]
+            );
+          } catch (_) {}
+        }
+
+        connection.release();
+      }
     }
   }
 );
